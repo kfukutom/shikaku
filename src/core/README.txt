@@ -1,0 +1,1 @@
+This folder contains core components of the game including the shapes, game logic, and the board representation.
