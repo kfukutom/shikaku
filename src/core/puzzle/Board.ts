@@ -1,19 +1,151 @@
-import { Tile } from "../../types";
+import type { Tile } from "../tiles/Tile";
+import type { Cell, Position, Bounds } from "../../types";
 
 export default class Board {
 
     readonly rows: number;
     readonly cols: number;
-    private board: Tile[][];
+    private grid: Cell[][];
+    private occupancy: Map<string, Position[]>;
 
-    constructor(in_row: number, in_col: number) {
-        this.rows = in_row;
-        this.cols = in_col;
-
-        initBoard();
+    constructor(rows: number, cols: number) {
+        this.rows = rows;
+        this.cols = cols;
+        this.grid = this.initGrid();
+        this.occupancy = new Map();
     }
 
-    private initBoard() : Promise<void> {
+    private initGrid(): Cell[][] {
+        const grid: Cell[][] = [];
+        let id = 0;
 
+        for (let row = 0; row < this.rows; ++row) {
+            const rowCells: Cell[] = [];
+            for (let col = 0; col < this.cols; ++col) {
+                rowCells.push({
+                    id: id++,
+                    occupant: null,
+                    status: 'empty',
+                });
+                //console.log(rowCells);
+            }
+            grid.push(rowCells);
+        }
+        
+        return grid;
+    }
+
+    // Cell Accessing:
+    getCell(pos: Position): Cell | null {
+        if (!this.inBounds(pos)) return null;
+        return this.grid[pos.row][pos.col];
+    }
+
+    inBounds(pos: Position): boolean {
+        return (
+            pos.row >= 0 &&
+            pos.row < this.rows &&
+            pos.col >= 0 &&
+            pos.col < this.cols
+        );
+    }
+
+    getNeighbors(pos: Position): Cell[] {
+        const deltas: Position[] = [
+            { row: -1, col: 0 },
+            { row: 1, col: 0 },
+            { row: 0, col: -1 },
+            { row: 0, col: 1 }
+        ];
+
+        const neighbors: Cell[] = [];
+        for (const d of deltas) {
+            const cell = this.getCell(
+                { 
+                    row: pos.row + d.row,
+                    col: pos.col + d.col 
+                }
+            );
+            if (cell !== null) {
+                neighbors.push(cell);
+            }
+        }
+
+        return neighbors;
+    }
+
+    // Cell Placement:
+    canPlace(tile: Tile): boolean {
+        if (!tile.isValid()) return false;
+
+        return tile.getCells().every(pos => {
+            const cell = this.getCell(pos);
+            return cell !== null && cell.status === "empty";
+        });
+    }
+
+    // modify this later with custom error messages, res status ideally.
+    place(tile: Tile): boolean {
+        if (!this.canPlace(tile)) return false;
+
+        const positions: Position[] = [];
+
+        for (const pos of tile.getCells()) {
+            const cell = this.grid[pos.row][pos.col];
+            cell.occupant = tile.id;
+            cell.status = "occupied";
+            positions.push(pos);
+        }
+
+        this.occupancy.set(tile.id, positions);
+
+        return true;
+    }
+
+
+    // Eviction of Tiles:
+    evict(tileId: string): Position[] {
+        const positions = this.occupancy.get(tileId);
+        if (!positions) return [];
+
+        for (const pos of positions) {
+            const cell = this.grid[pos.row][pos.col];
+            cell.occupant = null;
+            cell.status = "empty";
+        }
+
+        this.occupancy.delete(tileId);
+
+        return positions;
+    }
+
+
+    // Region Queries:
+    regionEmpty(bounds: Bounds): boolean {
+        for (let row = bounds.row; row < bounds.row + bounds.height; ++row) {
+            for (let col = bounds.col; col < bounds.col + bounds.width; ++col) {
+                const cell = this.getCell({ row, col });
+                if (cell === null || cell.status !== "empty") {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+
+    // Board State:
+    isFull(): boolean {
+        for (let row = 0; row < this.rows; ++row) {
+            for (let col = 0; col < this.cols; ++col) {
+                if (this.grid[row][col].status === "empty") return false;
+            }
+        }
+        return true;
+    }
+
+    reset(): void {
+        this.grid = this.initGrid();
+        this.occupancy.clear();
     }
 }
