@@ -17,6 +17,6 @@ type TileStatus = 'occupied' | 'in-action' | 'empty';
 
 export interface Tile {
     readonly id: number;
-    readonly occupant: string; // refer to Tile's base id.
+    occupant: string | null; // refer to Tile's base id.
     status: TileStatus;
 }
