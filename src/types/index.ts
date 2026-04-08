@@ -11,3 +11,12 @@ export interface Bounds {
     readonly width: number;
     readonly height: number;
 }
+
+// representation of a tile on the board
+type TileStatus = 'occupied' | 'in-action' | 'empty';
+
+export interface Tile {
+    readonly id: number;
+    readonly occupant: string; // refer to Tile's base id.
+    status: TileStatus;
+}
