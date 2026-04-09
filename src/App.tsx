@@ -1,20 +1,86 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from "react";
+import { Header, SolvedBanner, GameBoard } from "./components";
+import { GameGenerator } from "./core";
+import { DIFFICULTY, FALLBACK_DIFFICULTY, LEVEL_LABELS } from "./constants";
+import type { Tile } from "./core";
+import type { Clue } from "./types";
 
-// temporary for initial commit, got rid of all vite template stuff.
+interface Puzzle {
+    rows: number;
+    cols: number;
+    solution: Tile[];
+    clues: Clue[];
+    id: number;
+}
+
+function difficultyForScore(score: number) {
+    return DIFFICULTY.find(d => score < d.until) ?? FALLBACK_DIFFICULTY;
+}
 
 export default function App() {
-  const [score, setScore] = useState(0)
+    const puzzleId = useRef(0);
+    const [score, setScore] = useState(0);
+    const [solved, setSolved] = useState(false);
 
-  function handleScore() {
-    setScore(prev => prev >= 100 ? 0 : prev + 1)
-  }
+    const makePuzzle = useCallback((forScore: number): Puzzle => {
+        const diff = difficultyForScore(forScore);
+        const { solution, clues } = new GameGenerator(
+            diff.rows, diff.cols, diff.minArea, diff.maxArea
+        ).generate();
 
-  return (
-    <div className="flex flex-col items-center align-center p-10 gap-10">
-      <p className="font-bold">Score: {score}</p>
-      <button onClick={handleScore} className="bg-blue-300 hover:bg-blue-100 ease-in cursor-pointer p-4">
-        Click to add points
-      </button>
-    </div>
-  )
+        //console.log(solution);
+
+        return {
+            rows: diff.rows,
+            cols: diff.cols,
+            solution,
+            clues,
+            id: ++puzzleId.current
+        };
+    },[]);
+
+    const [puzzle, setPuzzle] = useState<Puzzle>(() => {
+        const diff = difficultyForScore(0);
+        const { solution, clues } = new GameGenerator(
+            diff.rows, diff.cols, diff.minArea, diff.maxArea
+        ).generate();
+
+        return {
+            rows: diff.rows,
+            cols: diff.cols,
+            solution, 
+            clues,
+            id: 0,
+        };
+    });
+
+    function handleSolve() {
+        setSolved(true);
+        setScore(s => s + 1);
+    }
+
+    function handlePlayNext() {
+        setPuzzle(makePuzzle(score));
+        setSolved(false);
+    }
+
+    return (
+        <div className="min-h-screen bg-stone-900 text-stone-100 flex flex-col items-center justify-center gap-6 p-2">
+            <Header
+                grid={`${puzzle.rows} x ${puzzle.cols}`}
+                level={LEVEL_LABELS[puzzle.rows] ?? "GMI"}
+            />
+
+            <GameBoard
+                key={puzzle.id}
+                rows={puzzle.rows}
+                cols={puzzle.cols}
+                solution={puzzle.solution}
+                clues={puzzle.clues}
+                onSolve={handleSolve}
+            />
+
+            {solved && <SolvedBanner onPlayNext={handlePlayNext} />}
+        </div>
+    );
 }
