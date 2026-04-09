@@ -9,9 +9,9 @@ import { send } from "./handlers";
 import rateLimit from "express-rate-limit";
 
 const allowedOrigins: string[] = [
-    'https://kfukutom.github.io/shikaku/',
-    'TODO'
-]
+    'https://kfukutom.github.io/',
+    "http://localhost:5173",
+];
 
 const app = express();
 app.use(helmet());
@@ -27,7 +27,7 @@ app.use(
             cb(new Error("CORS rejected"));
         },
         methods: ["GET", "POST"],
-        allowedHeaders: ["Content-Tye", "Authorization"],
+        allowedHeaders: ["Content-Type", "Authorization"],
         credentials: true,
     })
 );
@@ -52,7 +52,7 @@ const PORT = Number(process.env.PORT) || 3001;
 // Route definition
 app.post('/create', (req, res) => {
     const sessionId = nanoid(10);
-    const puzzle = "TODO"; // generate puzzle;
+    const puzzle = 'hello_world';
 
     // create a new session:
 
