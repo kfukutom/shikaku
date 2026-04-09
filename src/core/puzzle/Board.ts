@@ -15,6 +15,8 @@ export default class Board {
         this.occupancy = new Map();
     }
 
+
+    // Grid Initialization:
     private initGrid(): Cell[][] {
         const grid: Cell[][] = [];
         let id = 0;
@@ -35,7 +37,7 @@ export default class Board {
         return grid;
     }
 
-    // Cell Accessing:
+    // Cell Accesors:
     getCell(pos: Position): Cell | null {
         if (!this.inBounds(pos)) return null;
         return this.grid[pos.row][pos.col];
@@ -74,7 +76,33 @@ export default class Board {
         return neighbors;
     }
 
+    // Scan / Querying:
+
+    /**
+     * Scans top left to bottom right and returns the first empty cell.
+     * or null is returned if the board is full. Used by the generator to find the next
+     * anchor point for tile placement.
+     */
+    searchEmpty(): Position | null {
+        for (let row = 0; row < this.rows; ++row) {
+            for (let col = 0; col < this.cols; ++col) {
+                if (this.grid[row][col].status === "empty") {
+                    return {
+                        row,
+                        col,
+                    }
+                }
+            }
+        }
+
+        // otherwise return a null object
+        return null;
+    }
+
     // Cell Placement:
+    /**
+     * Returns true when every cell the tile covers is in bounds and / or empty.
+     */
     canPlace(tile: Tile): boolean {
         if (!tile.isValid()) return false;
 
@@ -84,7 +112,10 @@ export default class Board {
         });
     }
 
-    // modify this later with custom error messages, res status ideally.
+    /**
+     * Marks every cell the tile covers as an occupant, and records the
+     * tile int he occupancy map. Return false when placement is not permitted.
+     */
     place(tile: Tile): boolean {
         if (!this.canPlace(tile)) return false;
 
@@ -104,6 +135,10 @@ export default class Board {
 
 
     // Eviction of Tiles:
+    /**
+     * Removes a tile from the board, freeing its cell.
+     * Returns the position that was cleared (empty array iff ID DNE).
+     */
     evict(tileId: string): Position[] {
         const positions = this.occupancy.get(tileId);
         if (!positions) return [];
@@ -121,6 +156,10 @@ export default class Board {
 
 
     // Region Queries:
+    /**
+     * Returns trye when every cell insie the bounds is in-bounds + empty.
+     * Is useful for the generator to test candidate shapes before committing to a tile.
+     */
     regionEmpty(bounds: Bounds): boolean {
         for (let row = bounds.row; row < bounds.row + bounds.height; ++row) {
             for (let col = bounds.col; col < bounds.col + bounds.width; ++col) {
@@ -136,12 +175,7 @@ export default class Board {
 
     // Board State:
     isFull(): boolean {
-        for (let row = 0; row < this.rows; ++row) {
-            for (let col = 0; col < this.cols; ++col) {
-                if (this.grid[row][col].status === "empty") return false;
-            }
-        }
-        return true;
+        return this.searchEmpty() === null;
     }
 
     reset(): void {
