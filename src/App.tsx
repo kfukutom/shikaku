@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Header, SolvedBanner, GameBoard } from "./components";
 import { GameGenerator } from "./core";
-import { DIFFICULTY, FALLBACK_DIFFICULTY, LEVEL_LABELS } from "./constants";
+import { DIFFICULTY, FALLBACK_DIFFICULTY, LEVEL_LABELS } from "./utils/constants";
 import type { Tile } from "./core";
 import type { Clue } from "./types";
 
