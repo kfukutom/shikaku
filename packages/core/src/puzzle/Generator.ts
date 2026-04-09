@@ -1,7 +1,7 @@
 import Board from "./Board";
 import type { Tile } from "../tiles/Tile";
-import type { Bounds, Clue } from "../../types";
-import { fullShuffle } from "../../utils/randomizer";
+import type { Bounds, Clue } from "../types";
+import { fullShuffle } from "../utils/randomizer";
 
 // Tile Representations:
 import { SquareTile } from "../tiles/SquareTile";

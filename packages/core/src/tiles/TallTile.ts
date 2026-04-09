@@ -1,5 +1,5 @@
 import { BaseTile } from './BaseTile';
-import type { ShapeType } from '../../types';
+import type { ShapeType } from '../types';
 
 export class TallTile extends BaseTile {
 

@@ -3,7 +3,7 @@ import type {
     Position,
     ShapeType,
     Bounds 
-} from "../../types";
+} from "../types";
 
 export abstract class BaseTile implements Tile {
 

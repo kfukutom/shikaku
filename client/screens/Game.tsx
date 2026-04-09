@@ -1,9 +1,8 @@
 import { useState, useRef, useCallback } from "react";
-import { Header, SolvedBanner, GameBoard } from "./components";
-import { GameGenerator } from "./core";
-import { DIFFICULTY, FALLBACK_DIFFICULTY, LEVEL_LABELS } from "./utils/constants";
-import type { Tile } from "./core";
-import type { Clue } from "./types";
+import { Header, SolvedBanner, GameBoard } from "../components";
+import { GameGenerator } from "@tiles/core";
+import { DIFFICULTY, FALLBACK_DIFFICULTY, LEVEL_LABELS } from "../utils/constants";
+import type { Tile, Clue } from "@tiles/core";
 
 interface Puzzle {
     rows: number;
@@ -17,7 +16,7 @@ function difficultyForScore(score: number) {
     return DIFFICULTY.find(d => score < d.until) ?? FALLBACK_DIFFICULTY;
 }
 
-export default function App() {
+export default function Game() {
     const puzzleId = useRef(0);
     const [score, setScore] = useState(0);
     const [solved, setSolved] = useState(false);

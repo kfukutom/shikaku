@@ -1,5 +1,5 @@
 import type { Tile } from "../tiles/Tile";
-import type { Cell, Position, Bounds } from "../../types";
+import type { Cell, Position, Bounds } from "../types";
 
 export default class Board {
 

@@ -27,8 +27,3 @@ export interface Clue {
     readonly area: number;
     readonly tileId: string;
 }
-
-export interface HeaderProps {
-    grid: string;
-    level: string;
-}

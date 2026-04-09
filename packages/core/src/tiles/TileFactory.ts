@@ -1,5 +1,5 @@
 import type { Tile } from "./Tile";
-import type { Bounds } from "../../types";
+import type { Bounds } from "../types";
 import { SquareTile } from "./SquareTile";
 import { TallTile } from "./TallTile";
 import { WideTile } from "./WideTile";
