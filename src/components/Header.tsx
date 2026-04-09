@@ -8,7 +8,7 @@ export default function Header({ grid, level } : HeaderProps) {
             </h1>
 
             <p className="text-stone-500 text-sm tracking-wide">
-                <a className="underline" href="https://github.com/kfukutom/shikaku"> Github </a>
+                <a className="underline hover:text-stone-600 ease-in-out" href="https://github.com/kfukutom/shikaku" target="_blank" rel="noopener noreferrer"> View Github </a>
             </p>
 
             <p className="text-stone-600 text-xs tracking-wide uppercase">
