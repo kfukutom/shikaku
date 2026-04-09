@@ -6,4 +6,7 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   base: '/shikaku/',
   plugins: [react(), tailwindcss()],
+  server: {
+    host: true,
+  }
 })
