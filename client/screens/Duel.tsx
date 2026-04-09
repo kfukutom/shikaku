@@ -1,7 +1,4 @@
-
-
 export default function Duel() {
-
     return (
         <div className="min-h-screen bg-stone-900 text-stone-100 flex flex-col items-center justify-center gap-6">
             <h1 className="text-2xl font-bold tracking-wide uppercase">Duel Mode</h1>
