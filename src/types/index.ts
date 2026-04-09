@@ -15,8 +15,20 @@ export interface Bounds {
 // representation of a tile on the board
 type TileStatus = 'occupied' | 'in-action' | 'empty';
 
-export interface Tile {
+export interface Cell {
     readonly id: number;
     occupant: string | null; // refer to Tile's base id.
     status: TileStatus;
+}
+
+// clue rendered on the board for the player
+export interface Clue {
+    readonly position: Position;
+    readonly area: number;
+    readonly tileId: string;
+}
+
+export interface HeaderProps {
+    grid: string;
+    level: string;
 }
