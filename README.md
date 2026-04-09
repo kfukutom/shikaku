@@ -1,1 +1,1 @@
-WIP
+Drawn inspiration from [Shikaku](https://en.wikipedia.org/wiki/Shikaku), as well as EECS 498 at the University of Michigan. Contains the board representation, tile shapes, and puzzle generation logic.
