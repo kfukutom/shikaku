@@ -33,14 +33,22 @@ export default class GameGenerator {
         const board: Board = new Board(this.rows, this.cols);
         const solution: Tile[] = [];
 
-        if(!this.fill(board, solution, 0)) {
-            throw new Error("Failed to generate a valid parittion.");
+        const maxAttempts: number = 20;
+        for (let attempt = 0; attempt < maxAttempts; ++attempt) {
+            board.reset();
+            solution.length = 0;
+
+            if (this.fill(board, solution, 0, 0)) {
+                return {
+                    board,
+                    solution,
+                    clues: this.buildClues(solution),
+                }
+            }
+
         }
 
-        return {
-            board, solution,
-            clues: this.buildClues(solution)
-        };
+        throw new Error("Failed to generate a valid parittion.");
     }
 
 
@@ -72,12 +80,17 @@ export default class GameGenerator {
      * 
      * Note: Behavior is coupled with the Board Class.
      */
-    private fill(board: Board, solution: Tile[], depth: number): boolean {
+    private fill(board: Board, solution: Tile[], depth: number, nodes: number): boolean {
         const anchor = board.searchEmpty();
         if (!anchor) {
             // no empty cells -> board is fully partitioned.
             console.log("Fully partitioned board at this state.")
             return true;
+        }
+
+        const maxNodes = this.rows * this.cols * 200;
+        if (nodes > maxNodes) {
+            return false;
         }
 
         const candidates = this.getCandidates(board, anchor);
@@ -90,7 +103,7 @@ export default class GameGenerator {
             board.place(tile);
             solution.push(tile);
 
-            if (this.fill(board, solution, depth+1)) {
+            if (this.fill(board, solution, depth+1, nodes+1)) {
                 return true;
             }
 
