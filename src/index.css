@@ -9,3 +9,12 @@ html, body, #root {
     background-color: #1c1917;
     overscroll-behavior: none;
 }
+
+/* animations for buttons */
+.animate-fade-up {
+    animation: fadeUp 0.7s ease-in-out both;
+}
+
+.animate-fade-up-delay {
+    animation: fadeUp 0.5s ease-in-out 0.2s both
+}
