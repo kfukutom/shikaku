@@ -2,7 +2,7 @@ import * as http from "http";
 import express from "express";
 import cors from "cors";
 import { nanoid } from "nanoid";
-import { WebSocketServer } from "ws";
+import { WebSocket, WebSocketServer } from "ws";
 
 import { send } from "./handlers";
 
