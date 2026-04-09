@@ -38,6 +38,7 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve }: Game
     const clueMap = useClueMap(clues);
 
     const [placed, setPlaced] = useState<PlacedTile[]>([]);
+    const [solved, setSolved] = useState(false);
     const [colorIndex, setColorIndex] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [skipping, setSkipping] = useState(false);
@@ -90,7 +91,10 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve }: Game
         setPlaced(updated);
         setColorIndex(i => i + 1);
 
-        if (updated.length === solution.length) onSolve();
+        if (updated.length === solution.length) {
+            setSolved(true);
+            onSolve();
+        }
     }
 
     function removeTile(id: string) {
@@ -106,7 +110,7 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve }: Game
     }
 
     function handleMouseDown(r: number, c: number) {
-        if (skipping) return;
+        if (skipping || solved) return;
 
         const owner = findOwner(r, c);
         if (owner) return removeTile(owner.tile.id);
@@ -142,6 +146,7 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve }: Game
 
                 if (i === solution.length - 1) {
                     setSkipping(false);
+                    setSolved(true);
                     onSolve();
                 }
             }, (i + 1) * 300);
@@ -212,7 +217,7 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve }: Game
 
             {/* controls */}
             <div className="h-6 flex items-center justify-center gap-4">
-                {placed.length > 0 && !skipping && (
+                {placed.length > 0 && !skipping && !solved && (
                     <button
                         onClick={handleUndo}
                         className="text-xs tracking-widest uppercase text-stone-500
