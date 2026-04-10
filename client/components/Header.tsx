@@ -6,7 +6,7 @@ interface HeaderProps {
 export default function Header({ grid, level } : HeaderProps) {
     return (
         <div className="flex flex-col items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-wide uppercase">
+            <h1 className="text-2xl font-bold tracking-widest uppercase">
                 Unlimited Shikaku
             </h1>
 
@@ -16,7 +16,7 @@ export default function Header({ grid, level } : HeaderProps) {
                 <a className="underline hover:text-stone-300 ease-in-out transition-colors duration-200" href="/shikaku/duel">Duel</a>
             </p>
 
-            <p className="text-stone-600 text-xs tracking-wide uppercase">
+            <p className="text-stone-600 text-xs tracking-widest uppercase">
                 {grid} · {level}
             </p>
         </div>
