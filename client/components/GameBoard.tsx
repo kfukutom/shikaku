@@ -180,11 +180,16 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
                 style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
                 onMouseLeave={() => { if (drag.isActive.current) drag.cancel(); }}
                 onMouseUp={handleMouseUp}
+                onTouchEnd={(e) => {
+                    e.preventDefault();
+                    handleMouseUp();
+                }}
             >
                 {Array.from({ length: rows }, (_, r) =>
                     Array.from({ length: cols }, (_, c) => {
                         const owner = findOwner(r, c);
-                        const clue = clueMap.get(`${r},${c}`) ?? null;
+                        const clue = clueMap.get(`${r},${c}`) ?? null; 
+                        //console.log(clue);
                         const inPreview = drag.preview ? posInBounds(r, c, drag.preview) : false;
                         const cluePlaced = clue ? placed.some(p => p.clueId === clue.tileId) : false;
 
@@ -203,6 +208,27 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
                                 style={{ backgroundColor: bg }}
                                 onMouseDown={e => { e.preventDefault(); handleMouseDown(r, c); }}
                                 onMouseEnter={() => drag.move({ row: r, col: c })}
+                                onTouchStart={(e)=> {
+                                    e.preventDefault();
+                                    handleMouseDown(r, c);
+                                }}
+                                onTouchMove={(e) => {
+                                    e.preventDefault();
+                                    const touch = e.touches[0];
+
+                                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                                    if (element) {
+                                        //console.log(element);
+                                        const key = element.getAttribute('data-cell') ?? element.closest('[data-cell')?.getAttribute('data-cell');
+                                        if (key) {
+                                            const [ row, col ] = key.split(',').map(Number);
+                                            drag.move({
+                                                row,
+                                                col,
+                                            });
+                                        }
+                                    }
+                                }}
                             >
                                 {clue && (
                                     <span className={`
