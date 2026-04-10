@@ -13,7 +13,7 @@ export default function Duel() {
                     justify-center gap-6 transition-all duration-200 ${showModal ? "blur-xs" : ""}
                 `}
             >
-                <h1 className="text-2xl font-bold tracking-wide uppercase">Duel Mode</h1>
+                <h1 className="text-2xl font-bold tracking-widest uppercase">Duel Mode</h1>
                 <p className="text-stone-400 text-sm tracking-wide text-center max-w-xs">
                     Create a game and share the link with a friend. The puzzle starts when both players join.
                 </p>
