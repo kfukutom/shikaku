@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Game from "./screens/Game";
 import Duel from "./screens/Duel";
+import Battle from "./screens/Battle";
 import NotFound from "./screens/NotFound";
 
 export default function App() {
@@ -9,6 +10,7 @@ export default function App() {
             <Routes>
                 <Route path="/" element={<Game />} />
                 <Route path="/duel/" element={<Duel />} />
+                <Route path="/duel/:sessionId" element={<Battle />} />
                 <Route path="*" element={<NotFound />} />
             </Routes>
         </BrowserRouter>
