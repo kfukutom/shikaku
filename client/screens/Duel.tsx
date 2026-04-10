@@ -1,18 +1,23 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import PrimaryBtn from "../components/PrimaryBtn";
 import Modal from "../components/Modal";
 
 export default function Duel() {
-
     const [showModal, setShowModal] = useState(false);
+    const navigate = useNavigate();
+
+    function handleCreated(sessionId: string) {
+        navigate(`/duel/${sessionId}`);
+    }
 
     return (
         <>
-            <div className={
-                    `min-h-screen bg-stone-900 text-stone-100 flex flex-col items-center
-                    justify-center gap-6 transition-all duration-200 ${showModal ? "blur-xs" : ""}
-                `}
-            >
+            <div className={`
+                min-h-screen bg-stone-900 text-stone-100 flex flex-col items-center
+                justify-center gap-6 transition-all duration-200
+                ${showModal ? "blur-xs" : ""}
+            `}>
                 <h1 className="text-2xl font-bold tracking-widest uppercase">Duel Mode</h1>
                 <p className="text-stone-400 text-sm tracking-wide text-center max-w-xs">
                     Create a game and share the link with a friend. The puzzle starts when both players join.
@@ -28,7 +33,12 @@ export default function Duel() {
                 </a>
             </div>
 
-            {showModal && <Modal onClose={() => setShowModal(false)} />}
+            {showModal && (
+                <Modal
+                    onClose={() => setShowModal(false)}
+                    onCreated={handleCreated}
+                />
+            )}
         </>
     );
 }

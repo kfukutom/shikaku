@@ -27,3 +27,11 @@ export const TILE_COLORS = [
     "#d5b7e8", "#e8deb7", "#b7e0e8", "#e8c4b7",
     "#c4e8b7", "#b7b7e8", "#e8b7d5", "#dee8b7",
 ] as const;
+
+// Used in the modal component, level presets
+export const PRESETS = [
+    { label: "6 x 6", rows: 6, cols: 6, minArea: 2, maxArea: 6 },
+    { label: "8 x 8", rows: 8, cols: 8, minArea: 3, maxArea: 8 },
+    { label: "10 x 10", rows: 10, cols: 10, minArea: 3, maxArea: 10 },
+    { label: "12 x 12", rows: 12, cols: 12, minArea: 4, maxArea: 12 },
+] as const;
