@@ -19,4 +19,4 @@ pnpm run dev:client
 pnpm run dev:server
 ```
 
-Primary objective of this project is to understand software design patterns that appear in larger codebases, and to explore certain tradeoffs in writing TypeScript. TypeScript was chosen out of respect to what's commonly used in fullstack, as well as from [EECS 498](https://eecs498-software-design.org/). Thanks.
+Primary objective of this project is to understand software design patterns that appear in larger codebases, and to explore certain tradeoffs in writing TypeScript. TypeScript was chosen out of respect to what's commonly used in fullstack, as well as from [EECS 498](https://eecs498-software-design.org/). Thanks. (note, please assume this project is done for the scope of desktop view only)
