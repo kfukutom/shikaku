@@ -19,6 +19,8 @@ interface GameBoardProps {
     solution: Tile[];
     clues: Clue[];
     onSolve: () => void;
+    onPlace?: (bounds: Bounds) => void;
+    onEvict?: (tileId: string) => void;
 }
 
 function posInBounds(r: number, c: number, b: Bounds): boolean {
@@ -32,7 +34,7 @@ function posInBounds(r: number, c: number, b: Bounds): boolean {
  * clue and the area matches, the tile gets placed. Click an existing
  * tile to remove it. Undo pops the last tile, skip reveals the answer.
  */
-export default function GameBoard({ rows, cols, solution, clues, onSolve }: GameBoardProps) {
+export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlace, onEvict }: GameBoardProps) {
     const { place, evict, reset } = useBoard(rows, cols);
     const drag = useDrag();
     const clueMap = useClueMap(clues);
@@ -90,8 +92,9 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve }: Game
 
         setPlaced(updated);
         setColorIndex(i => i + 1);
+        onPlace?.(bounds);
 
-        if (updated.length === solution.length) {
+        if (updated.length === clues.length) {
             setSolved(true);
             onSolve();
         }
@@ -100,6 +103,7 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve }: Game
     function removeTile(id: string) {
         evict(id);
         setPlaced(prev => prev.filter(p => p.tile.id !== id));
+        onEvict?.(id);
     }
 
     function handleUndo() {
