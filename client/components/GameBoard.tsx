@@ -203,6 +203,7 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
                         return (
                             <div
                                 key={`${r}-${c}`}
+                                data-cell={`${r},${c}`}
                                 className="w-14 h-14 border border-stone-700 flex items-center justify-center
                                            cursor-pointer transition-all duration-300 ease-out"
                                 style={{ backgroundColor: bg }}
