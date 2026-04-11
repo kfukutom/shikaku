@@ -3,20 +3,23 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { nanoid } from "nanoid";
-import { WebSocket, WebSocketServer } from "ws";
+import { WebSocketServer } from "ws";
+import type WebSocket from "ws";
 
-import { send } from "./handlers";
+import { send, startGame, handleMessage, handleDisconnect } from "./handlers";
+import { generatePuzzle } from "./puzzle";
+import { createRoom, getRoom, joinRoom, leaveRoom, isFull, pruneStaleRooms } from "./sessions";
 import rateLimit from "express-rate-limit";
 
 const allowedOrigins: string[] = [
-    'https://kfukutom.github.io/',
-    "http://localhost:5173",
+    'https://kfukutom.github.io',
+    'http://localhost:5173',
+    'http://localhost:5174',
 ];
 
 const app = express();
 app.use(helmet());
 
-// move to single cors call
 app.use(
     cors({
         origin: (origin, cb) => {
@@ -27,7 +30,7 @@ app.use(
             cb(new Error("CORS rejected"));
         },
         methods: ["GET", "POST"],
-        allowedHeaders: ["Content-Type", "Authorization"],
+        allowedHeaders: ["Content-Type"],
         credentials: true,
     })
 );
@@ -36,7 +39,6 @@ app.use(express.json({
     limit: "1kb"
 }));
 
-// rate limit the create endpoint
 app.use(
     '/create',
     rateLimit({
@@ -49,18 +51,25 @@ app.use(
 const PORT = Number(process.env.PORT) || 3001;
 
 
-// Route definition
+/**
+ * Creates a new duel room and returns the session ID.
+ * Puzzle is generated server-side so neither client can see the solution.
+ */
 app.post('/create', (req, res) => {
+    const { rows = 6, cols = 6, minArea = 2, maxArea = 8 } = req.body;
     const sessionId = nanoid(10);
-    const puzzle = 'hello_world';
+    const puzzle = generatePuzzle(rows, cols, minArea, maxArea);
 
-    // create a new session:
+    createRoom(sessionId, puzzle);
 
-    res.json({
-        sessionId,
-        puzzle,
-    });
+    // only return the session ID — puzzle is sent over WS when both players join
+    res.json({ sessionId });
 });
+
+app.get("/health", (_req, res) => {
+    res.json({ status: "ok" });
+});
+
 
 // Websocket:
 const server = http.createServer(app);
@@ -74,69 +83,94 @@ const wss = new WebSocketServer({
         done(false, 403, "Origin not allowed");
     },
 
-    maxPayload: 4 * 1024, // 4kb
+    maxPayload: 4 * 1024,
 });
 
 const connectionPerIp = new Map<string, number>();
-const MAX_CHANNEL = 5;
+const MAX_CHANNEL = 20;
 
 wss.on('connection', (ws: WebSocket, req) => {
 
+    // per-IP throttle
     const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() ??
         req.socket.remoteAddress ?? "unknown";
-    
-    console.log(ip);
+
     const current = connectionPerIp.get(ip) ?? 0;
 
     if (current >= MAX_CHANNEL) {
-        send(ws, {type: 'error', message: 'Too many connections'});
+        send(ws, { type: 'error', message: 'Too many connections' });
         ws.close();
         return;
     }
 
-    connectionPerIp.set(ip, current+1);
-    ws.on('close', () => {
-        const n = (connectionPerIp.get(ip) ?? 1) - 1;
-        if (n <= 0) connectionPerIp.delete(ip);
-        else connectionPerIp.set(ip, n);
-    });
+    connectionPerIp.set(ip, current + 1);
 
-    // revised validation of url path
+    // validate url path — expecting /duel/{sessionId}
     const match = req.url?.match(/^\/duel\/([A-Za-z0-9_-]{1,20})$/);
     if (!match) {
-        send(ws, { type: 'error', message: 'Invalid URL'});
+        send(ws, { type: 'error', message: 'Invalid URL' });
         ws.close();
         return;
     }
 
-    const session = 'TODO';
+    // session lookup
+    const session = getRoom(match[1]);
     if (!session) {
         send(ws, { type: 'error', message: 'Session not found' });
         ws.close();
         return;
     }
 
-    const pid = nanoid(6);
-    const player = pid; // TODO
+    // join the room — null means it's full
+    const playerId = nanoid(6);
+    const player = joinRoom(session, playerId, ws);
+    if (!player) {
+        send(ws, { type: 'error', message: 'Room is full' });
+        ws.close();
+        return;
+    }
 
+    // first player waits, second triggers game start
+    if (!isFull(session)) {
+        send(ws, { type: 'waiting', sessionId: session.id });
+    } else {
+        startGame(session);
+    }
+
+    // heartbeat — detects dead connections that didn't close cleanly
     let alive = true;
     ws.on('pong', () => (alive = true));
     const heartbeat = setInterval(() => {
         if (!alive) {
             ws.terminate();
-            clearInterval(heartbeat);
             return;
-        } else {
-            alive = false;
-            ws.ping();
         }
+        alive = false;
+        ws.ping();
     }, 30_000);
 
-    ws.on('close', () => clearInterval(heartbeat));
+    // message routing
+    ws.on('message', (data) => {
+        handleMessage(session, player, data.toString());
+    });
+
+    // cleanup on disconnect
+    ws.on('close', () => {
+        clearInterval(heartbeat);
+
+        const n = (connectionPerIp.get(ip) ?? 1) - 1;
+        if (n <= 0) connectionPerIp.delete(ip);
+        else connectionPerIp.set(ip, n);
+
+        handleDisconnect(session, playerId);
+        leaveRoom(session, playerId);
+    });
 });
 
 
-// Start
+// prune stale rooms every 5 minutes
+setInterval(pruneStaleRooms, 5 * 60 * 1000);
+
 server.listen(PORT, () => {
-    console.log(`Shikaku duel server running on: ${String(PORT!)}`);
+    console.log(`Shikaku duel server running on: ${PORT}`);
 });
