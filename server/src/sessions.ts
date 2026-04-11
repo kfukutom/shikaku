@@ -79,7 +79,7 @@ export function joinRoom(session: Session, playerId: string, ws: WebSocket) : Pl
 }
 
 export function leaveRoom(session: Session, playerId: string) : void {
-    sessionStorage.players.delete(playerId);
+    session.players.delete(playerId);
 
     if (session.players.size === 0) {
         deleteRoom(session.id);

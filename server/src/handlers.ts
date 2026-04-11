@@ -79,6 +79,7 @@ export function handleMessage(session: Session, player: Player, raw: string) : v
 
     const msg: ClientMessage = parsed.data;
     const opponent = getOpponent(session, player.id);
+    //console.log(`[${player.id}] ${msg.type}`, msg);
 
     switch (msg.type) {
         case 'place': {
