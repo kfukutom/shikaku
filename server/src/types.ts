@@ -10,7 +10,7 @@ export interface PuzzlePayload {
 
 // Server to Client
 export type ServerMessage =
-    | { type: "waiting" }
+    | { type: "waiting", sessionId: string }
     | { type: "start", puzzle: PuzzlePayload, playerSlot: 'left' | 'right'}
     | { type: "opponent_placed", bounds: Bounds; tileId: string; color: string }
     | { type: "opponent_evict"; tileId: string }
