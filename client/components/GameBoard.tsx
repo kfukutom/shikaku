@@ -21,6 +21,7 @@ interface GameBoardProps {
     onSolve: () => void;
     onPlace?: (bounds: Bounds) => void;
     onEvict?: (tileId: string) => void;
+    disabled?: boolean;
 }
 
 function posInBounds(r: number, c: number, b: Bounds): boolean {
@@ -34,7 +35,7 @@ function posInBounds(r: number, c: number, b: Bounds): boolean {
  * clue and the area matches, the tile gets placed. Click an existing
  * tile to remove it. Undo pops the last tile, skip reveals the answer.
  */
-export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlace, onEvict }: GameBoardProps) {
+export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlace, onEvict, disabled = false }: GameBoardProps) {
     const { place, evict, reset } = useBoard(rows, cols);
     const drag = useDrag();
     const clueMap = useClueMap(clues);
@@ -114,7 +115,7 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
     }
 
     function handleMouseDown(r: number, c: number) {
-        if (skipping || solved) return;
+        if (skipping || solved || disabled) return;
 
         const owner = findOwner(r, c);
         if (owner) return removeTile(owner.tile.id);
@@ -188,8 +189,7 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
                 {Array.from({ length: rows }, (_, r) =>
                     Array.from({ length: cols }, (_, c) => {
                         const owner = findOwner(r, c);
-                        const clue = clueMap.get(`${r},${c}`) ?? null; 
-                        //console.log(clue);
+                        const clue = clueMap.get(`${r},${c}`) ?? null;
                         const inPreview = drag.preview ? posInBounds(r, c, drag.preview) : false;
                         const cluePlaced = clue ? placed.some(p => p.clueId === clue.tileId) : false;
 
@@ -219,8 +219,7 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
 
                                     const element = document.elementFromPoint(touch.clientX, touch.clientY);
                                     if (element) {
-                                        //console.log(element);
-                                        const key = element.getAttribute('data-cell') ?? element.closest('[data-cell')?.getAttribute('data-cell');
+                                        const key = element.getAttribute('data-cell') ?? element.closest('[data-cell]')?.getAttribute('data-cell');
                                         if (key) {
                                             const [ row, col ] = key.split(',').map(Number);
                                             drag.move({
@@ -247,28 +246,30 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
             </div>
 
             {/* controls */}
-            <div className="h-6 flex items-center justify-center gap-4">
-                {placed.length > 0 && !skipping && !solved && (
-                    <button
-                        onClick={handleUndo}
-                        className="text-xs tracking-widest uppercase text-stone-500
-                                   hover:text-stone-300 transition-colors duration-200
-                                   cursor-pointer px-3 py-1"
-                    >
-                        Undo
-                    </button>
-                )}
-                {!skipping && placed.length < solution.length && (
-                    <button
-                        onClick={handleSkip}
-                        className="text-xs tracking-widest uppercase text-stone-500
-                                   hover:text-stone-300 transition-colors duration-200
-                                   cursor-pointer px-3 py-1"
-                    >
-                        Skip
-                    </button>
-                )}
-            </div>
+            {!disabled && (
+                <div className="h-6 flex items-center justify-center gap-4">
+                    {placed.length > 0 && !skipping && !solved && (
+                        <button
+                            onClick={handleUndo}
+                            className="text-xs tracking-widest uppercase text-stone-500
+                                       hover:text-stone-300 transition-colors duration-200
+                                       cursor-pointer px-3 py-1"
+                        >
+                            Undo
+                        </button>
+                    )}
+                    {!skipping && placed.length < solution.length && (
+                        <button
+                            onClick={handleSkip}
+                            className="text-xs tracking-widest uppercase text-stone-500
+                                       hover:text-stone-300 transition-colors duration-200
+                                       cursor-pointer px-3 py-1"
+                        >
+                            Skip
+                        </button>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
