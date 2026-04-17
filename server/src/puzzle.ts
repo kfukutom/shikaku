@@ -9,19 +9,21 @@ interface ServerPuzzle {
     tileCount: number;
 };
 
-// generates a puzzle and splits it into what the client sees (clues)
-// and what stays server-side (solution bounds);
+// generatePuzzle(): generates a puzzle and splits it into what the client sees (clues)
+// and what stays server-side (solution bounds).
 export function generatePuzzle(rows: number, cols: number, minArea: number, maxArea: number) : ServerPuzzle {
-    const gen: GameGenerator = new GameGenerator(rows,cols,minArea,maxArea);
-    const { solution, clues } = gen.generate();
+    if (rows > 12 || cols > 12 ) {
+        throw new Error(`The inputted dimension of ${rows}x${cols} exceeds the allowed size!`);
+    } else {
+        const gen: GameGenerator = new GameGenerator(rows, cols, minArea, maxArea);
+        const { solution, clues } = gen.generate();
 
-    //console.log(solution);
-
-    return {
-        rows,
-        cols,
-        clues,
-        solution: solution.map(t => t.bounds),
-        tileCount: solution.length,
-    };
+        return {
+            rows, cols, clues,
+            solution: solution.map(t => t.bounds),
+            tileCount: solution.length ?? 0
+        }
+    }
 }
+
+export type { ServerPuzzle };

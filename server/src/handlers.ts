@@ -2,7 +2,7 @@ import type { ServerMessage, ClientMessage } from "./types";
 import type { Bounds } from "@tiles/core";
 import { WebSocket } from "ws";
 
-import { getOpponent, type Player, type Session } from "./sessions";
+import type { Player, Session, SessionRegistry } from "./sessions";
 import { ClientMessageSchema } from "./schemas";
 import { validatePlacement } from "./validation";
 
@@ -39,7 +39,7 @@ export function startGame(session: Session): void {
 }
 
 // Message Router
-export function handleMessage(session: Session, player: Player, raw: string) : void {
+export function handleMessage(sessions: SessionRegistry, session: Session, player: Player, raw: string) : void {
     let parsed;
     try {
         parsed = ClientMessageSchema.safeParse(
@@ -78,7 +78,7 @@ export function handleMessage(session: Session, player: Player, raw: string) : v
     }
 
     const msg: ClientMessage = parsed.data;
-    const opponent = getOpponent(session, player.id);
+    const opponent = sessions.opponentOf(session, player.id);
     //console.log(`[${player.id}] ${msg.type}`, msg);
 
     switch (msg.type) {
@@ -197,9 +197,7 @@ function handleSolved(
 }
 
 // Disconnect
-export function handleDisconnect(session: Session, playerId: string) : void {
-    const opponent = getOpponent(session, playerId);
-
+export function handleDisconnect(session: Session, opponent: Player | null) : void {
     if (opponent && session.state !== 'finished') {
         sendTo(opponent, { type: 'opponent_disconnected' });
     }
