@@ -1,10 +1,18 @@
 import type WebSocket from "ws";
+import { nanoid } from "nanoid";
 import type { Bounds, Clue } from "@tiles/core";
+import { ServerPuzzle } from "./puzzle";
+
+// Session Types:
+export type SessionState = 'waiting' | 'playing' | 'finished';
+export type PlayerSlot = 'left' | 'right';
 
 export interface Player {
+    /** Unique within a session. */
     id: string;
     ws: WebSocket;
-    slot: 'left' | 'right'; // represents display on screen
+    /** Which side of the board this player displays on. */
+    slot: PlayerSlot;
     placed: number;
     solved: boolean;
     // time: number;
@@ -12,100 +20,166 @@ export interface Player {
 
 export interface Session {
     id: string;
-    puzzle: {
-        rows: number;
-        cols: number;
-        clues: Clue[];
-        // kept as serverside component, never send to client
-        solution: Bounds[];
-        tileCount: number;
-    };
+    puzzle: ServerPuzzle;
+    /** Solution will stay server-side, never send to clients. */
     players: Map<string, Player>;
     winner: string | null;
-    state: 'waiting' | 'playing' | 'finished';
+    state: SessionState;
     createdAt: number;
 };
 
-// all the active sessions keyed by session ID
-const rooms = new Map<string, Session>();
-const TTL: number = 60 * 60 * 500;
+/**
+ * Outcome of attempting to join a session. Split into explicit failure
+ * reasons so the caller can send the right err message to the client
+ * instead of collapsing everything into null.
+ */
+export type JoinRes =
+    | { ok: true, session: Session; player: Player; isFirst: boolean }
+    | { ok: false; reason: "not_found" | "full" | "finished"};
 
-export function createRoom(id: string, puzzle: Session['puzzle']) : Session {
-    const session: Session = {
-        id,
-        puzzle,
-        players: new Map(),
-        winner: null,
-        state: 'waiting',
-        createdAt: Date.now(),
-    };
 
-    //console.log(session.state);
-    rooms.set(
-        id, session
-    );
-    
-    return session;
-}
+// SessionRegistry:
+export class SessionRegistry {
+    private readonly sessions = new Map<string, Session>();
+    private readonly ttlMs: number;
 
-export function getRoom(id: string): Session | null {
-    return rooms.get(id) ?? null;
-}
-
-export function deleteRoom(id: string): void {
-    rooms.delete(id);
-}
-
-export function joinRoom(session: Session, playerId: string, ws: WebSocket) : Player | null {
-    if (session.players.size >= 2) return null;
-    if (session.state === 'finished') return null;
-
-    const slot = session.players.size === 0 ? 'left' : 'right';
-
-    const player: Player = {
-        id: playerId,
-        ws,
-        slot,
-        placed: 0,
-        solved: false,
-    };
-
-    session.players.set(
-        playerId, player
-    );
-
-    //console.log(session.players);
-    return player;
-}
-
-export function leaveRoom(session: Session, playerId: string) : void {
-    session.players.delete(playerId);
-
-    if (session.players.size === 0) {
-        deleteRoom(session.id);
+    constructor(opts?: {ttlMs: number }) {
+        this.ttlMs = opts!.ttlMs;
     }
-}
 
-export function getOpponent(session: Session, playerId: string): Player | null {
-    for (const [id, player] of session.players) {
-        if (id !== playerId) return player;
+    /** Number of active sessions. */
+    get size(): number {
+        return this.sessions.size;
     }
-    return null;
-}
 
-export function isFull(session: Session): boolean {
-    return session.players.size >= 2;
-}
+    /** Look up a session by `id` key; returns null if none exists. */
+    get (id: string) : Session | null {
+        return (this.sessions.get(id)) ?? null;
+    }
 
-export function pruneStaleRooms(): void {
-    const now = Date.now();
-    for (const [id, session] of rooms) {
-        if (now - session.createdAt > TTL) {
-            for (const player of session.players.values()) {
-                player.ws.close();
+    /**
+     * Create a new session with freshly generated unique id.
+     * Starts in the `waiting` state with obviously zero players.
+     */
+    create(puzzle: Session['puzzle']): Session {
+        let id: string;
+        do {
+            id = nanoid(10);
+        } while (this.sessions.has(id));
+
+        const sesh: Session = {
+            id,
+            puzzle,
+            players: new Map(),
+            winner: null,
+            state: 'waiting',
+            createdAt: Date.now(),
+        };
+
+        this.sessions.set(
+            id, sesh
+        );
+
+        return sesh;
+    }
+
+    /**
+     * Attempt to place a new player into a session. Existence, capacity, 
+     * and game-state checks all happen in one synchronous pass. So there
+     * exists no window for two joins to race past the capacity check.
+     */
+    join(id: string, ws: WebSocket): JoinRes {
+        const sesh = this.sessions.get(id); // look up existing session via unique nanoid.
+
+        if (!sesh) return { ok: false, reason: 'not_found' };
+        if (sesh.state === 'finished') {
+            // TODO
+            return { ok: false, reason: 'finished' };
+        }
+        if (sesh.players.size >= 2) {
+            // TODO
+            return { ok: false, reason: 'full' };
+        }
+
+        const isFirst = sesh.players.size === 0;
+        const slot: PlayerSlot = isFirst ? 'left' : 'right';
+        let pid: string;
+        do {
+            pid = nanoid(8);
+        } while (sesh.players.has(pid));
+
+        const player: Player = {
+            id: pid,
+            ws,
+            slot,
+            placed: 0,
+            solved: false,
+        };
+
+        sesh.players.set(pid, player);
+        
+        return {
+            ok: true,
+            session: sesh,
+            player,
+            isFirst
+        }
+    }
+
+    /**
+     * Removes a player from a session. When the last player leaves, the
+     * session is deleted from the registry cleanly.
+     */
+    leave(id: string, pid: string) : void {
+        const sesh = this.sessions.get(id);
+        if (!sesh) return;
+
+        sesh.players.delete(pid);
+        if (sesh.players.size === 0) {
+            this.sessions.delete(id);
+        }
+    }
+
+    /**
+     * Return the other player in a session, or null if there exists none.
+     */
+    opponentOf(sesh: Session, pid: string) : Player | null {
+        for (const [id, player] of sesh.players) {
+            if (id !== pid) return player;
+        }
+
+        return null;
+    }
+
+    /** True once both player slots are filled. */
+    isFull(session: Session): boolean {
+        return session.players.size >= 2;
+    }
+
+    /**
+     * Close and remove sessions older than the TTL. Returns the number
+     * that weren't pruned. Safe to call on some interval.
+     */
+    pruneStale(): number {
+        const now = Date.now();
+        let pruned = 0;
+
+        for (const [id, sesh] of this.sessions) {
+            if (now - sesh.createdAt <= this.ttlMs) continue;
+
+            for (const player of sesh.players.values()) {
+                try {
+                    player.ws.close(1000, 'Session expired');
+                } catch {
+                    /* socket already closed; ignore */
+                }
             }
 
-            rooms.delete(id);
+            this.sessions.delete(id);
+            ++pruned;
         }
+
+        console.log(`Pruned session count: ${pruned} at ${now}`);
+        return pruned;
     }
 }
