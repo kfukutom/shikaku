@@ -22,7 +22,7 @@ const DUEL_PATH = /^\/duel\/([A-Za-z0-9_-]{1,20})$/;
 const allowedOrigins: string[] = [
     'https://kfukutom.github.io',
     ...(process.env.NODE_ENV !== 'production'
-        ? ['http://localhost:5173', 'http://localhost:5174']
+        ? ['http://localhost:5173']
         : []),
 ];
 
