@@ -3,7 +3,8 @@ import type { ServerMessage } from "./useDuelTypes";
 
 type MessageHandler = (msg: ServerMessage) => void;
 
-const WS_URL = import.meta.env.VITE_WS_URL ?? "ws://localhost:3001";
+const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "http://localhost:3001";
+const WS_URL = SERVER_URL.replace(/^http/, "ws");
 
 export function useSocket(sessionId: string | undefined, onMessage: MessageHandler) {
     const ws = useRef<WebSocket | null>(null);
