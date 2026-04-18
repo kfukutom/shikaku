@@ -184,6 +184,6 @@ wss.on('connection', (ws: WebSocket, req) => {
  
 setInterval(() => sessions.pruneStale(), PRUNE_INTERVAL_MS);
  
-server.listen(PORT, () => {
-    console.log(`Shikaku duel server running on: ${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Shikaku duel server listening on ${PORT}`);
 });
