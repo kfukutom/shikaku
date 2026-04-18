@@ -1,10 +1,10 @@
-import type { ServerMessage, ClientMessage } from "./types";
+import type { ServerMessage, ClientMessage } from "./types.js";
 import type { Bounds } from "@tiles/core";
 import { WebSocket } from "ws";
 
-import type { Player, Session, SessionRegistry } from "./sessions";
-import { ClientMessageSchema } from "./schemas";
-import { validatePlacement } from "./validation";
+import type { Player, Session, SessionRegistry } from "./sessions.js";
+import { ClientMessageSchema } from "./schemas.js";
+import { validatePlacement } from "./validation.js";
 
 const OPPONENT_COLOR = "rgba(168, 162, 150, 0.35)";
 

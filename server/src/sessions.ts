@@ -1,7 +1,6 @@
 import type WebSocket from "ws";
 import { nanoid } from "nanoid";
-import type { Bounds, Clue } from "@tiles/core";
-import { ServerPuzzle } from "./puzzle";
+import { ServerPuzzle } from "./puzzle.js";
 
 // Session Types:
 export type SessionState = 'waiting' | 'playing' | 'finished';
