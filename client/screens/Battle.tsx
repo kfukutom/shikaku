@@ -228,7 +228,7 @@ export default function Battle() {
             {gameOver && (
                 <div className="flex flex-col items-center gap-4 animate-fade-up">
                     <p className="text-stone-300 text-sm tracking-wide">
-                        {result === "you" ? "You won!" : "Opponent won."}
+                        {result === "you" ? "You won!" : "Opponent won, lock in bruh."}
                     </p>
                     <div className="flex gap-6">
                         <button
