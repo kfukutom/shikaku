@@ -1,5 +1,5 @@
-import { BaseTile } from "./BaseTile";
-import type { ShapeType } from "../types";
+import { BaseTile } from "./BaseTile.js";
+import type { ShapeType } from "../types.js";
 
 export class WideTile extends BaseTile {
 

@@ -2,7 +2,7 @@ import type {
     Bounds,
     Position,
     ShapeType 
-} from "../types";
+} from "../types.js";
 
 export interface Tile {
     readonly id: string;

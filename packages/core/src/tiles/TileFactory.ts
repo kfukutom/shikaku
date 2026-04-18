@@ -1,8 +1,8 @@
-import type { Tile } from "./Tile";
-import type { Bounds } from "../types";
-import { SquareTile } from "./SquareTile";
-import { TallTile } from "./TallTile";
-import { WideTile } from "./WideTile";
+import type { Tile } from "./Tile.js";
+import type { Bounds } from "../types.js";
+import { SquareTile } from "./SquareTile.js";
+import { TallTile } from "./TallTile.js";
+import { WideTile } from "./WideTile.js";
 
 export function createTile(id: string, bounds: Bounds): Tile {
     if (bounds.width === bounds.height) {

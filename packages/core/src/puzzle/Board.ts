@@ -1,5 +1,5 @@
-import type { Tile } from "../tiles/Tile";
-import type { Cell, Position, Bounds } from "../types";
+import type { Tile } from "../tiles/Tile.js";
+import type { Cell, Position, Bounds } from "../types.js";
 
 export default class Board {
 

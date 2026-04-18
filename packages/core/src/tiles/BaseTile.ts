@@ -1,9 +1,9 @@
-import type { Tile } from "./Tile";
+import type { Tile } from "./Tile.js";
 import type { 
     Position,
     ShapeType,
     Bounds 
-} from "../types";
+} from "../types.js";
 
 export abstract class BaseTile implements Tile {
 

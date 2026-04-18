@@ -1,12 +1,12 @@
-import Board from "./Board";
-import type { Tile } from "../tiles/Tile";
-import type { Bounds, Clue } from "../types";
-import { fullShuffle } from "../utils/randomizer";
+import Board from "./Board.js";
+import type { Tile } from "../tiles/Tile.js";
+import type { Bounds, Clue } from "../types.js";
+import { fullShuffle } from "../utils/randomizer.js";
 
 // Tile Representations:
-import { SquareTile } from "../tiles/SquareTile";
-import { TallTile } from "../tiles/TallTile";
-import { WideTile } from "../tiles/WideTile";
+import { SquareTile } from "../tiles/SquareTile.js";
+import { TallTile } from "../tiles/TallTile.js";
+import { WideTile } from "../tiles/WideTile.js";
 
 interface GeneratedPuzzle {
     readonly board: Board;
