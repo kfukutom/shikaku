@@ -24,3 +24,4 @@ export type ClientMessage =
     | { type: "place"; bounds: Bounds }
     | { type: "evict"; tileId: string }
     | { type: "solved" };
+    

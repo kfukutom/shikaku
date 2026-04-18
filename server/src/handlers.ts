@@ -2,6 +2,7 @@ import type { ServerMessage, ClientMessage } from "./types.js";
 import type { Bounds } from "@tiles/core";
 import { WebSocket } from "ws";
 
+// fixed
 import type { Player, Session, SessionRegistry } from "./sessions.js";
 import { ClientMessageSchema } from "./schemas.js";
 import { validatePlacement } from "./validation.js";

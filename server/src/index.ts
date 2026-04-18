@@ -7,6 +7,7 @@ import { WebSocketServer } from "ws";
 import type WebSocket from "ws";
 import rateLimit from "express-rate-limit";
 
+// fixed
 import { send, startGame, handleMessage, handleDisconnect } from "./handlers.js";
 import { generatePuzzle } from "./puzzle.js";
 import { SessionRegistry } from "./sessions.js";
