@@ -6,7 +6,7 @@ This is a monorepo with mainly three packages:
 
 - **`packages/core`** - Board representation, tile shapes, puzzle generation via backtracking. Shared by both client and the server. Using deep abstractions and subtype polymorphism for individual tile representations.
 - **`client`** - React, TailwindCSS UI. Drag to draw rectangles, undo, skip, and auto-scaling difficulty.
-- **`server`** - Express, WebSocket server for a *proposed* real-time duel mode. Handles session creation, move validation, and opponent broadcasting.
+- **`server`** - Express, WebSocket server for a ~*proposed*~ real-time duel mode. Handles session creation, move validation, and opponent broadcasting.
 
 ### Getting Started
 ```bash
@@ -20,3 +20,6 @@ pnpm run dev:server
 ```
 
 Primary objective of this project is to understand software design patterns that appear in larger codebases, and to explore certain tradeoffs in writing TypeScript. TypeScript was chosen out of respect to what's commonly used in fullstack, as well as from [EECS 498](https://eecs498-software-design.org/). Thanks. (note, please assume this project is done for the scope of desktop view only)
+
+### Logs
+**[04/18/26]**: As of today, I've wrapped up the initial setup of the project, so the functionality for every initially proposed feature is now in place. The only remaining issues are resolving errors in session handling, managing concurrency, and dealing with scaling. For now, I'm gonna put this project on hold for a while, but it was great to learn more about socket programming and adopt software design principles within a monorepo structure, where things can get messy quickly.
