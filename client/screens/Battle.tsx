@@ -136,12 +136,14 @@ export default function Battle() {
                             <code className="text-xs text-stone-400 bg-stone-800 border border-stone-700 px-3 py-2 rounded">
                                 {window.location.href}
                             </code>
+
+                            {/* Copied module */}
                             <button
                                 onClick={() => {
-                                    const text = `Join me for a duel in Shikaku!\n${window.location.href}`;
+                                    const text: string = String(window.location.href);
                                     navigator.clipboard.writeText(text);
                                     setCopied(true);
-                                    setTimeout(() => setCopied(false), 2000);
+                                    setTimeout(() => setCopied(false), 7000);
                                 }}
                                 className="text-xs tracking-widest uppercase text-stone-500
                                         hover:text-stone-300 transition-colors duration-200
