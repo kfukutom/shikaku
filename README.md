@@ -10,7 +10,7 @@ This is a monorepo with mainly three packages:
 
 *Initial Duel UI (as of 4/18/26)*
 
-![Initial Duel UI](./public/ui-demo-1.png)
+![Initial Duel UI](./public/movement_demo_01.gif)
 
 ### Getting Started
 ```bash
