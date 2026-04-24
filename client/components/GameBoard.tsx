@@ -45,6 +45,7 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
     const [colorIndex, setColorIndex] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [skipping, setSkipping] = useState(false);
+    const [selectedTile, setSelectedTile] = useState<string | null>(null);
 
     const errorTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
     const skipTimeouts = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -122,19 +123,29 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
         setPlaced(prev => prev.filter(p => p.tile.id !== id));
     }
 
-    function handleUndo() {
+    function handleUndo(): void {
         const last = placed.at(-1);
         if (last) removeTile(last.tile.id);
         drag.cancel();
         setError(null);
     }
 
-    function handleMouseDown(r: number, c: number) {
+    function handleMouseDown(r: number, c: number): void {
         if (skipping || solved || disabled) return;
 
         const owner = findOwner(r, c);
-        if (owner) return removeTile(owner.tile.id);
+        if (owner) {
+            if (selectedTile === owner.tile.id) {
+                // the selected tile matches the owner's referenced id.
+                removeTile(owner.tile.id);
+                setSelectedTile(null);
+            } else {
+                setSelectedTile(owner.tile.id);
+            }
+            return;
+        }
 
+        setSelectedTile(null);
         drag.start({ row: r, col: c });
         setError(null);
     }
@@ -208,9 +219,12 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
                         const inPreview = drag.preview ? posInBounds(r, c, drag.preview) : false;
                         const cluePlaced = clue ? placed.some(p => p.clueId === clue.tileId) : false;
 
-                        // pick background: placed tile color > drag preview > nothing
+                        const isSelected = owner && selectedTile === owner.tile.id;
+
                         const bg = owner
-                            ? owner.color
+                            ? isSelected
+                                ? "rgba(232, 232, 232, 0.1)"
+                                : owner.color
                             : inPreview
                                 ? "rgba(168, 162, 150, 0.25)"
                                 : "transparent";
