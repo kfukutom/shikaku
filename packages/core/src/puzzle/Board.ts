@@ -70,7 +70,6 @@ export default class Board {
                     occupant: null,
                     status: 'empty',
                 });
-                //console.log(rowCells);
             }
             grid.push(rowCells);
         }

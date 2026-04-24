@@ -60,7 +60,6 @@ export default class GameGenerator {
         return solution.map(tile => {
             const cell_array = tile.getCells();
             const cell = cell_array[Math.floor(Math.random() * cell_array.length)];
-            //console.log(cell);
 
             return {
                 position: cell,
@@ -84,7 +83,6 @@ export default class GameGenerator {
         const anchor = board.searchEmpty();
         if (!anchor) {
             // no empty cells -> board is fully partitioned.
-            console.log("Fully partitioned board at this state.")
             return true;
         }
 
@@ -126,7 +124,6 @@ export default class GameGenerator {
         for (let w = 1; w <= this.cols - anchor.col; ++w) {
             for (let h = 1; h <= this.rows - anchor.row; ++h) {
                 const area = w * h;
-                //console.log(area);
 
                 if (area < this.minArea) continue;
                 if (area > this.maxArea) break;
@@ -144,7 +141,6 @@ export default class GameGenerator {
             }
         }
 
-        console.log(out);  // for debugging
         return out;
     }
 
