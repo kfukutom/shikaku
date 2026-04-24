@@ -3,7 +3,8 @@ import type { ServerMessage } from "./useDuelTypes";
 
 type MessageHandler = (msg: ServerMessage) => void;
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL ?? "http://localhost:3001";
+const SERVER_URL: string = import.meta.env.VITE_SERVER_URL ?? "http://localhost:3001";
+console.log(`[Client] Development Serverl URL: ${SERVER_URL}`) // added a log for deployment
 const WS_URL = SERVER_URL.replace(/^http/, "ws");
 
 export function useSocket(sessionId: string | undefined, onMessage: MessageHandler) {
@@ -20,7 +21,6 @@ export function useSocket(sessionId: string | undefined, onMessage: MessageHandl
         if (!sessionId) return;
 
         let playerId = sessionStorage.getItem(`shikaku_player_id`);
-        console.log(playerId);
         if (!playerId) {
             playerId = crypto.randomUUID();
             sessionStorage.setItem(`shikaku_player_id`, playerId);
@@ -41,7 +41,7 @@ export function useSocket(sessionId: string | undefined, onMessage: MessageHandl
                 const msg: ServerMessage = JSON.parse(e.data);
                 onMessageRef.current(msg);
             } catch {
-                console.error("bad message from server");
+                console.error("[Client] Bad message received from server");
             }
         };
 
@@ -70,6 +70,12 @@ export function useSocket(sessionId: string | undefined, onMessage: MessageHandl
     const sendSolved = useCallback(() => {
         ws.current?.send(JSON.stringify({ type: "solved" }));
     }, []);
+
+    // const sendLeftRoom = useCallback(() => {
+    //     ws.current?.send(
+    //         JSON.stringify({ value: 'leave' })
+    //     );
+    // }, []);
 
     return { connected, sendPlace, sendEvict, sendSolved };
 }
