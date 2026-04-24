@@ -27,3 +27,5 @@ Primary objective of this project is to understand software design patterns that
 
 ### Logs
 **[04/18/26]**: As of today, I've wrapped up the initial setup of the project, so the functionality for every initially proposed feature is now in place. The only remaining issues are resolving errors in session handling, managing concurrency, and dealing with scaling. For now, I'm gonna put this project on hold for a while, but it was great to learn more about socket programming and adopt software design principles within a monorepo structure, where things can get messy quickly.
+
+**[04/24/26]**: Client and server communications were not synced well and tile placement was iffy so I went back and fixed/revised how this was handled. `handlePlace` function in the server/ was generating its own tileId that doesn't match the client's local ID, making the UI look pretty out of sync. All fixed.
