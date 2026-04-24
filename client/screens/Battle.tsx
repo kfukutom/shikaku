@@ -86,7 +86,7 @@ export default function Battle() {
                 break;
 
             case "error":
-                console.error("server:", msg.message);
+                console.error("[Server]:", msg.message);
                 if (duelState === "connecting") {
                     setSessionError(msg.message);
                 }
@@ -114,7 +114,6 @@ export default function Battle() {
 
     // utilizing the date time object; create a start time countdown buffer
     if (duelState === "countdown" && startTime) {
-        console.log('hit!');
         return (
             <Countdown startsAt={startTime} onComplete={() => setDuelState("playing")}/>
         );
