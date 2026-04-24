@@ -1,6 +1,16 @@
 import type { Tile } from "../tiles/Tile.js";
 import type { Cell, Position, Bounds } from "../types.js";
 
+/**
+ * Observer interface for the Board events. All callbacks are optional.
+ * Observers implement only what they care about.
+ */
+export interface BoardObserver {
+    onTilePlaced?(tile: Tile, positions: readonly Position[]): void;
+    onTileEvicted?(tileId: string, positions: readonly Position[]): void;
+    onBoardReset?(): void; // called after the board is fully resetted
+}
+
 export default class Board {
 
     readonly rows: number;
@@ -8,11 +18,42 @@ export default class Board {
     private grid: Cell[][];
     private occupancy: Map<string, Position[]>;
 
+    private observers: Set<BoardObserver> = new Set();
+
     constructor(rows: number, cols: number) {
         this.rows = rows;
         this.cols = cols;
         this.grid = this.initGrid();
         this.occupancy = new Map();
+    }
+
+    /**
+     * Observer Management
+     */
+    addObserver(observer: BoardObserver): () => void {
+        this.observers.add(observer);
+        return () => this.observers.delete(observer);
+    }
+
+    removeObserver(observer: BoardObserver): void {
+        this.observers.delete(observer);
+    }
+
+    clearObservers(): void {
+        this.observers.clear();
+    }
+
+    private emit<K extends keyof BoardObserver>(
+        event: K,
+        ...args: Parameters<NonNullable<BoardObserver[K]>>
+    ): void {
+        for (const obs of this.observers) {
+            const cb = obs[event];
+            if (cb) {
+                // @ts-expect-error — TS can't correlate K across the loop
+                cb.apply(obs, args);
+            }
+        }
     }
 
 
@@ -128,6 +169,7 @@ export default class Board {
             positions.push(pos);
         }
 
+        this.emit('onTilePlaced', tile, positions);
         this.occupancy.set(tile.id, positions);
 
         return true;
@@ -149,6 +191,7 @@ export default class Board {
             cell.status = "empty";
         }
 
+        this.emit('onTileEvicted', tileId, positions);
         this.occupancy.delete(tileId);
 
         return positions;
@@ -181,5 +224,6 @@ export default class Board {
     reset(): void {
         this.grid = this.initGrid();
         this.occupancy.clear();
+        this.emit('onBoardReset');
     }
 }
