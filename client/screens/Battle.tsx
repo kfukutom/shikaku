@@ -8,7 +8,7 @@ import type { ServerMessage, PuzzlePayload } from "../hooks/useDuelTypes";
 // Components
 import GameBoard from "../components/GameBoard";
 import OpponentBoard from "../components/OpponentBoard";
-//import Countdown from "../components/Countdown";
+import Countdown from "../components/Countdown";
 
 interface OpponentTile {
     tileId: string;
@@ -32,6 +32,7 @@ export default function Battle() {
     const [opponentProgress, setOpponentProgress] = useState({ placed: 0, total: 0 });
     const [result, setResult] = useState<Result>(null);
     const [disconnected, setDisconnected] = useState(false);
+    const [startTime, setStartTime] = useState(0);
 
     const [copied, setCopied] = useState(false);
     //const [startsAt, setStartsAt] = useState<number | null>(null);
@@ -44,7 +45,7 @@ export default function Battle() {
 
             case "start":
                 setPuzzle(msg.puzzle);
-                //setDuelState("playing");
+                setStartTime(msg.puzzle.gameStartTime);
 
                 // add another time buffer to allow user to settle in
                 // e.g., a simple game count down
@@ -81,6 +82,7 @@ export default function Battle() {
 
             case "opponent_disconnected":
                 setDisconnected(true);
+                //setDuelState('waiting');
                 break;
 
             case "error":
@@ -110,11 +112,13 @@ export default function Battle() {
         );
     }
 
-    //if (duelState === "countdown" && startsAt !== null) {
-    //    return (
-    //        <Countdown startsAt={startsAt} onComplete={() => setDuelState("playing")}/>
-    //    );
-    //}
+    // utilizing the date time object; create a start time countdown buffer
+    if (duelState === "countdown" && startTime) {
+        console.log('hit!');
+        return (
+            <Countdown startsAt={startTime} onComplete={() => setDuelState("playing")}/>
+        );
+    }
 
     // server rejected the connection
     if (sessionError) {

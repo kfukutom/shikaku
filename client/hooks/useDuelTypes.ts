@@ -4,6 +4,7 @@ export interface PuzzlePayload {
     rows: number;
     cols: number;
     clues: Clue[];
+    gameStartTime: number;
 }
 
 export type ServerMessage =

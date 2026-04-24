@@ -6,6 +6,7 @@ export interface PuzzlePayload {
     rows: number;
     cols: number;
     clues: Clue[];
+    gameStartTime: number;
 }
 
 // Server to Client

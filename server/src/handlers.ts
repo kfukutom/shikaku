@@ -24,15 +24,18 @@ function sendTo(player: Player, msg: ServerMessage) : void {
 /** called whent he SECOND player joins, sends the puzzle to both connected clients. */
 export function startGame(session: Session): void {
     session.state = 'playing';
+    session.createdAt = Date.now();
 
     for (const player of session.players.values()) {
-        // send puzzle here:
+        // send to the client the puzzle
+        // added the current start time to support the countdown UI
         sendTo(player, {
             type: 'start',
             puzzle: {
                 rows: session.puzzle.rows,
                 cols: session.puzzle.cols,
                 clues: session.puzzle.clues,
+                gameStartTime: session.createdAt,
             },
             playerSlot: player.slot,
         });
@@ -80,7 +83,6 @@ export function handleMessage(sessions: SessionRegistry, session: Session, playe
 
     const msg: ClientMessage = parsed.data;
     const opponent = sessions.opponentOf(session, player.id);
-    //console.log(`[${player.id}] ${msg.type}`, msg);
 
     switch (msg.type) {
         case 'place': {

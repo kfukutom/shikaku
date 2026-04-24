@@ -136,9 +136,9 @@ wss.on('connection', (ws: WebSocket, req) => {
     const joinResult = sessions.join(match[1], ws);
     if (!joinResult.ok) {
         const messages = {
-            not_found: "Session not found",
-            full: "Room is full",
-            finished: "Game already finished",
+            not_found: "Session not found!",
+            full: "Room is full!",
+            finished: "Game already finished!",
         } as const;
         send(ws, { type: 'error', message: messages[joinResult.reason] });
         ws.close();
@@ -150,8 +150,21 @@ wss.on('connection', (ws: WebSocket, req) => {
     // First player waits; the second's arrival starts the game.
     if (isFirst) {
         send(ws, { type: 'waiting', sessionId: session.id });
-    } else {
+    } else if (session.state === 'waiting') {
+        console.log('Everyone has arrived!');
         startGame(session);
+    } else if (session.state === 'playing') {
+        // session is already created:
+        send(ws, {
+            type: 'start',
+            puzzle: {
+                rows: session.puzzle.rows,
+                cols: session.puzzle.cols,
+                clues: session.puzzle.clues,
+                gameStartTime: session.createdAt,
+            },
+            playerSlot: player.slot,
+        });
     }
  
     // Detects dead connections that didn't close cleanly. Worst-case
