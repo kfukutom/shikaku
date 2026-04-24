@@ -51,8 +51,8 @@ export function useSocket(sessionId: string | undefined, onMessage: MessageHandl
         };
     }, [sessionId]);
 
-    const sendPlace = useCallback((bounds: { row: number; col: number; width: number; height: number }) => {
-        ws.current?.send(JSON.stringify({ type: "place", bounds }));
+    const sendPlace = useCallback((tileId: string, bounds: { row: number; col: number; width: number; height: number }) => {
+        ws.current?.send(JSON.stringify({ type: "place", tileId, bounds }));
     }, []);
 
     const sendEvict = useCallback((tileId: string) => {

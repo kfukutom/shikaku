@@ -73,12 +73,7 @@ export default function OpponentBoard({ rows, cols, clues, tiles }: OpponentBoar
                 {/* Cell grid — inert surface with clue numbers + subtle dot texture */}
                 <div
                     className="inline-grid rounded-sm bg-stone-950/60"
-                    style={{
-                        ...gridTemplate,
-                        backgroundImage:
-                            "radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px)",
-                        backgroundSize: "10px 10px",
-                    }}
+                    style={gridTemplate}
                 >
                     {Array.from({ length: rows }, (_, r) =>
                         Array.from({ length: cols }, (_, c) => {
@@ -94,15 +89,11 @@ export default function OpponentBoard({ rows, cols, clues, tiles }: OpponentBoar
                                     {clue && (
                                         <span
                                             className={`
-                                                font-mono text-sm sm:text-base font-semibold tabular-nums
-                                                pointer-events-none
-                                                transition-all duration-300 ease-out
-                                                ${covered
-                                                    ? "text-stone-600 scale-90"
-                                                    : "text-stone-200 scale-100"}
+                                                text-lg font-bold pointer-events-none
+                                                transition-colors duration-200
+                                                ${covered ? "text-stone-500" : "text-stone-200"}
                                             `}
                                         >
-                                            {clue.area}
                                         </span>
                                     )}
                                 </div>

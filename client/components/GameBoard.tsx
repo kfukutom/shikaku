@@ -1,6 +1,6 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { createTile } from "@tiles/core";
-import type { Tile, Bounds, Clue } from "@tiles/core";
+import type { Tile, Bounds, Clue, BoardObserver } from "@tiles/core";
 
 import { useBoard } from "../hooks/useBoard";
 import { useDrag } from "../hooks/useDrag";
@@ -19,7 +19,7 @@ interface GameBoardProps {
     solution: Tile[];
     clues: Clue[];
     onSolve: () => void;
-    onPlace?: (bounds: Bounds) => void;
+    onPlace?: (tileId: string, bounds: Bounds) => void;
     onEvict?: (tileId: string) => void;
     disabled?: boolean;
 }
@@ -36,7 +36,7 @@ function posInBounds(r: number, c: number, b: Bounds): boolean {
  * tile to remove it. Undo pops the last tile, skip reveals the answer.
  */
 export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlace, onEvict, disabled = false }: GameBoardProps) {
-    const { place, evict, reset } = useBoard(rows, cols);
+    const { place, evict, reset, addObserver } = useBoard(rows, cols);
     const drag = useDrag();
     const clueMap = useClueMap(clues);
 
@@ -51,6 +51,22 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
 
     // clean up any pending skip animations on unmount
     useEffect(() => () => skipTimeouts.current.forEach(clearTimeout), []);
+
+    // bridge board events to multiplayer callbacks so every place/evict
+    // (including the ones in skip) relays automatically
+    const observer = useMemo<BoardObserver>(() => ({
+        onTilePlaced(tile) {
+            onPlace?.(tile.id, tile.bounds);
+        },
+        onTileEvicted(tileId) {
+            onEvict?.(tileId);
+        },
+    }), [onPlace, onEvict]);
+
+    useEffect(() => {
+        const unsubscribe = addObserver(observer);
+        return unsubscribe;
+    }, [addObserver, observer]);
 
     // figure out which placed tile owns a given cell (if any)
     const findOwner = useCallback((r: number, c: number): PlacedTile | null => {
@@ -84,7 +100,7 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
         if (contained[0].area !== area)
             return showError(`Area must be ${contained[0].area}, got ${area}`);
 
-        // board handles the overlap check internally
+        // board handles the overlap check internally; observer relays onPlace
         const tile = place(bounds);
         if (!tile) return showError("Overlaps an existing tile");
 
@@ -93,7 +109,6 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
 
         setPlaced(updated);
         setColorIndex(i => i + 1);
-        onPlace?.(bounds);
 
         if (updated.length === clues.length) {
             setSolved(true);
@@ -102,9 +117,9 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
     }
 
     function removeTile(id: string) {
+        // observer relays onEvict when the board emits
         evict(id);
         setPlaced(prev => prev.filter(p => p.tile.id !== id));
-        onEvict?.(id);
     }
 
     function handleUndo() {
@@ -135,7 +150,7 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
         drag.cancel();
         setError(null);
 
-        // clear the board first
+        // clear the board first (observer relays each evict to opponent)
         placed.forEach(p => evict(p.tile.id));
         setPlaced([]);
         reset();

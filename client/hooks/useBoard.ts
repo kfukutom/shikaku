@@ -1,6 +1,7 @@
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { Board, createTile } from "@tiles/core";
 import type { Tile, Bounds } from "@tiles/core";
+import type { BoardObserver } from "@tiles/core";
 
 /**
  * This serves as a thin wrapper around the Board so components don't douch the ref directly.
@@ -33,9 +34,28 @@ export function useBoard(rows: number, cols: number) {
         board.current.reset();
     }, []);
 
+    const addObserver = useCallback((observer: BoardObserver): () => void => {
+        return board.current.addObserver(observer);
+    }, []);
+
     return {
         place,
         evict,
         reset,
+        addObserver,
     };
+}
+
+/**
+ * Convenience hooks for subscribing to board events inside components.
+ * Automatically handles cleanup on unmount or when observers would change.
+ */
+export function useBoardObserver(
+    addObserver: (observer: BoardObserver) => () => void,
+    observer: BoardObserver,
+) {
+    useEffect(() => {
+        const unsubscribe = addObserver(observer);
+        return unsubscribe;
+    }, [addObserver, observer]);
 }

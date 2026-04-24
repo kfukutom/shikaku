@@ -4,8 +4,11 @@ import type { Bounds, Tile } from "@tiles/core";
 
 import { useSocket } from "../hooks/useSocket";
 import type { ServerMessage, PuzzlePayload } from "../hooks/useDuelTypes";
+
+// Components
 import GameBoard from "../components/GameBoard";
 import OpponentBoard from "../components/OpponentBoard";
+//import Countdown from "../components/Countdown";
 
 interface OpponentTile {
     tileId: string;
@@ -13,7 +16,7 @@ interface OpponentTile {
     color: string;
 }
 
-type DuelState = "connecting" | "waiting" | "playing" | "finished";
+type DuelState = "connecting" | "waiting" | "playing" | "finished" | "countdown";
 type Result = "you" | "opponent" | null;
 
 const EMPTY_SOLUTION: Tile[] = [];
@@ -31,6 +34,7 @@ export default function Battle() {
     const [disconnected, setDisconnected] = useState(false);
 
     const [copied, setCopied] = useState(false);
+    //const [startsAt, setStartsAt] = useState<number | null>(null);
 
     const handleServerMessage = useCallback((msg: ServerMessage) => {
         switch (msg.type) {
@@ -40,8 +44,12 @@ export default function Battle() {
 
             case "start":
                 setPuzzle(msg.puzzle);
-                setDuelState("playing");
+                //setDuelState("playing");
 
+                // add another time buffer to allow user to settle in
+                // e.g., a simple game count down
+
+                setDuelState("countdown");
                 setDisconnected(false);
                 setOpponentTiles([]);
                 setOpponentProgress({
@@ -101,6 +109,12 @@ export default function Battle() {
             </div>
         );
     }
+
+    //if (duelState === "countdown" && startsAt !== null) {
+    //    return (
+    //        <Countdown startsAt={startsAt} onComplete={() => setDuelState("playing")}/>
+    //    );
+    //}
 
     // server rejected the connection
     if (sessionError) {
