@@ -123,8 +123,15 @@ wss.on('connection', (ws: WebSocket, req) => {
         if (n <= 0) connectionsPerIp.delete(ip);
         else connectionsPerIp.set(ip, n);
     };
- 
+    
+    //const url = new URL(req.url || '', `http://${req.headers.host || 'localhost'}`);
+    //console.log('req.url:', req.url);
+    //console.log('pathname:', url.pathname);
+    //console.log('search:', url.search);
+    //console.log('playerId:', url.searchParams.get('playerId'));
+
     const match = req.url?.match(DUEL_PATH);
+
     if (!match) {
         send(ws, { type: 'error', message: 'Invalid URL' });
         ws.close();
@@ -151,7 +158,7 @@ wss.on('connection', (ws: WebSocket, req) => {
     if (isFirst) {
         send(ws, { type: 'waiting', sessionId: session.id });
     } else if (session.state === 'waiting') {
-        console.log('Everyone has arrived!');
+        console.log('[Server]: All players have arrived, now starting game');
         startGame(session);
     } else if (session.state === 'playing') {
         // session is already created:
@@ -187,9 +194,8 @@ wss.on('connection', (ws: WebSocket, req) => {
     ws.on('close', () => {
         clearInterval(heartbeat);
         releaseIp();
- 
-        // Capture the opponent BEFORE removing ourselves so handleDisconnect
-        // can notify them. Order matters here.
+        console.log(`[Server]: server ws closing at ${new Date()}`)
+
         const opponent = sessions.opponentOf(session, player.id);
         handleDisconnect(session, opponent);
         sessions.leave(session.id, player.id);
@@ -199,5 +205,5 @@ wss.on('connection', (ws: WebSocket, req) => {
 setInterval(() => sessions.pruneStale(), PRUNE_INTERVAL_MS);
  
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Shikaku duel server listening on ${PORT}`);
+    console.log(`[Server]: Shikaku duel server listening on ${PORT}`);
 });
