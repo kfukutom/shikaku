@@ -27,8 +27,6 @@ export default function Game() {
             diff.rows, diff.cols, diff.minArea, diff.maxArea
         ).generate();
 
-        //console.log(solution);
-
         return {
             rows: diff.rows,
             cols: diff.cols,
