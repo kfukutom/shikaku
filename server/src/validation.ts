@@ -18,12 +18,15 @@ export function validatePlacement(
 ) : ValidationResult {
 
     if (bounds.width <= 0 || bounds.height <= 0) {
+        console.log('[Server]: Puzzle contains invalid dimensions');
         return { valid: false, error: "Invalid dimensions" };
     }
 
     if (!Number.isInteger(bounds.row) || !Number.isInteger(bounds.col) || 
         !Number.isInteger(bounds.width) || !Number.isInteger(bounds.height)) {
-        return { valid: false,
+        console.log('[Server]: Puzzle bounds must be integers');
+        return { 
+            valid: false,
             error: "Bounds must be integers"
         };
     }

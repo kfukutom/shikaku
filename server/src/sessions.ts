@@ -179,7 +179,7 @@ export class SessionRegistry {
             ++pruned;
         }
 
-        console.log(`Pruned session count: ${pruned} at ${now}`);
+        console.log(`[Server]: Pruned session count: ${pruned} at ${now}`);
         return pruned;
     }
 }
