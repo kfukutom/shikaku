@@ -19,8 +19,16 @@ export function useSocket(sessionId: string | undefined, onMessage: MessageHandl
     useEffect(() => {
         if (!sessionId) return;
 
+        let playerId = sessionStorage.getItem(`shikaku_player_id`);
+        console.log(playerId);
+        if (!playerId) {
+            playerId = crypto.randomUUID();
+            sessionStorage.setItem(`shikaku_player_id`, playerId);
+        }
+
         let cancelled = false;
         const socket = new WebSocket(`${WS_URL}/duel/${sessionId}`);
+        //const socket = new WebSocket(`${WS_URL}/duel/${sessionId}?playerId=${playerId}`);
         ws.current = socket;
 
         socket.onopen = () => {
