@@ -21,7 +21,7 @@ export type ServerMessage =
 
 // Client to Server
 export type ClientMessage =
-    | { type: "place"; bounds: Bounds }
+    | { type: "place"; bounds: Bounds, tileId: string }
     | { type: "evict"; tileId: string }
     | { type: "solved" };
     

@@ -12,6 +12,7 @@ export const ClientMessageSchema = z.discriminatedUnion("type", [
     z.object({
         type: z.literal("place"),
         bounds: BoundsSchema,
+        tileId: z.string(),
     }),
     z.object({ 
         type: z.literal("evict"),

@@ -84,7 +84,7 @@ export function handleMessage(sessions: SessionRegistry, session: Session, playe
 
     switch (msg.type) {
         case 'place': {
-            handlePlace(session, player, opponent, msg.bounds);
+            handlePlace(session, player, opponent, msg.tileId, msg.bounds);
             break;
         }
         
@@ -117,6 +117,7 @@ function handlePlace(
     session: Session,
     player: Player,
     opponent: Player | null,
+    tileId: string,
     bounds: Bounds,
 ) : void {
     const check = validatePlacement(
@@ -137,7 +138,6 @@ function handlePlace(
     }
 
     player.placed++;
-    const tileId = `opp-${player.id}-${player.placed}`;
 
     // broadcast to opponent so their board updates in real time
     if (opponent) {
