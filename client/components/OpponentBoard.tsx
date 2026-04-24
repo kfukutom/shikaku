@@ -52,10 +52,10 @@ export default function OpponentBoard({ rows, cols, clues, tiles }: OpponentBoar
         >
             {/* Header: label + placement counter */}
             <div className="flex items-center justify-between gap-4 pb-2">
-                <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-stone-400">
+                <span className="text-[10px] uppercase tracking-[0.24em] text-stone-400">
                     Opponent
                 </span>
-                <span className="font-mono text-[11px] tabular-nums text-stone-400">
+                <span className="text-[11px] tabular-nums text-stone-400">
                     {String(placed).padStart(2, "0")}
                     <span className="mx-1 text-stone-700">/</span>
                     {String(total).padStart(2, "0")}
@@ -64,13 +64,11 @@ export default function OpponentBoard({ rows, cols, clues, tiles }: OpponentBoar
 
             {/* Board frame */}
             <div className="relative">
-                {/* Corner brackets — classic HUD chrome */}
                 <span className="absolute -top-0.5 -left-0.5  w-2.5 h-2.5 border-t border-l border-stone-500" />
                 <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 border-t border-r border-stone-500" />
                 <span className="absolute -bottom-0.5 -left-0.5 w-2.5 h-2.5 border-b border-l border-stone-500" />
                 <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 border-b border-r border-stone-500" />
 
-                {/* Cell grid — inert surface with clue numbers + subtle dot texture */}
                 <div
                     className="inline-grid rounded-sm bg-stone-950/60"
                     style={gridTemplate}
@@ -102,7 +100,6 @@ export default function OpponentBoard({ rows, cols, clues, tiles }: OpponentBoar
                     )}
                 </div>
 
-                {/* Tile overlay — one grid-positioned rect per placement. */}
                 <div
                     className="pointer-events-none absolute inset-0 grid"
                     style={gridTemplate}
