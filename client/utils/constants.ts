@@ -17,8 +17,8 @@ export const FALLBACK_DIFFICULTY = {
 };
 
 export const LEVEL_LABELS : Record<number, string> = {
-    4: 'NGMI', 5: 'Easy', 6: 'Medium',
-    7: 'Hard', 8: 'Expert', 9: 'GMI'
+    4: 'Very Easy', 5: 'Easy', 6: 'Medium',
+    7: 'Hard', 8: 'Expert', 9: 'Cracked'
 };
 
 // Generated with AI:
