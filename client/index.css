@@ -8,6 +8,7 @@
 html, body, #root {
     background-color: #1c1917;
     overscroll-behavior: none;
+    font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
 }
 
 /* animations for buttons */
