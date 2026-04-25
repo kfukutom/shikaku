@@ -1,4 +1,5 @@
 import type { Bounds, Clue } from "@tiles/core";
+import { logMessage } from "./helper/helper";
 
 type ValidationResult =
     | { valid: true; clue: Clue }
@@ -18,13 +19,13 @@ export function validatePlacement(
 ) : ValidationResult {
 
     if (bounds.width <= 0 || bounds.height <= 0) {
-        console.log('[Server]: Puzzle contains invalid dimensions');
+        logMessage('[Server]: Puzzle contains invalid dimensions', 'error');
         return { valid: false, error: "Invalid dimensions" };
     }
 
     if (!Number.isInteger(bounds.row) || !Number.isInteger(bounds.col) || 
         !Number.isInteger(bounds.width) || !Number.isInteger(bounds.height)) {
-        console.log('[Server]: Puzzle bounds must be integers');
+        logMessage('[Server]: Puzzle bounds must be integers', 'error');
         return { 
             valid: false,
             error: "Bounds must be integers"

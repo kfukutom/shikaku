@@ -2,6 +2,7 @@ import type WebSocket from "ws";
 import { nanoid } from "nanoid";
 // fixed
 import { ServerPuzzle } from "./puzzle.js";
+import { logMessage } from "./helper/helper.js";
 
 // Session Types:
 export type SessionState = 'waiting' | 'playing' | 'finished';
@@ -133,6 +134,8 @@ export class SessionRegistry {
     leave(id: string, pid: string) : void {
         const sesh = this.sessions.get(id);
         if (!sesh) return;
+        
+        logMessage('Player has left the room.', 'log');
 
         sesh.players.delete(pid);
         if (sesh.players.size === 0) {
@@ -179,7 +182,7 @@ export class SessionRegistry {
             ++pruned;
         }
 
-        console.log(`[Server]: Pruned session count: ${pruned} at ${now}`);
+        logMessage(`[Server]: Pruned session count: ${pruned} at ${now}`, 'log');
         return pruned;
     }
 }
