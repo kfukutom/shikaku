@@ -1,5 +1,5 @@
 import type { Bounds, Clue } from "@tiles/core";
-import { logMessage } from "./helper/helper";
+import { logMessage } from "./helper/helper.js";
 
 type ValidationResult =
     | { valid: true; clue: Clue }
