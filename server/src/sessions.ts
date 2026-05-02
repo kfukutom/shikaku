@@ -17,6 +17,7 @@ export interface Player {
     placed: number;
     solved: boolean;
     // time: number;
+    reconnectGrace: NodeJS.Timeout | null;
 };
 
 export interface Session {
@@ -35,8 +36,9 @@ export interface Session {
  * instead of collapsing everything into null.
  */
 export type JoinRes =
-    | { ok: true, session: Session; player: Player; isFirst: boolean }
-    | { ok: false; reason: "not_found" | "full" | "finished"};
+    | { ok: true; session: Session; player: Player; isFirst: boolean; reconnected: false }
+    | { ok: true; session: Session; player: Player; isFirst: false; reconnected: true }
+    | { ok: false; reason: "not_found" | "full" | "finished" };
 
 
 // SessionRegistry:
@@ -89,10 +91,32 @@ export class SessionRegistry {
      * and game-state checks all happen in one synchronous pass. So there
      * exists no window for two joins to race past the capacity check.
      */
-    join(id: string, ws: WebSocket): JoinRes {
+    join(id: string, ws: WebSocket, playerId: string): JoinRes {
         const sesh = this.sessions.get(id); // look up existing session via unique nanoid.
 
         if (!sesh) return { ok: false, reason: 'not_found' };
+        const existing = sesh.players.get(playerId);
+        if (existing) {
+            if (existing.reconnectGrace) {
+                clearTimeout(existing.reconnectGrace);
+                existing.reconnectGrace = null;
+            }
+            const oldWs = existing.ws;
+            existing.ws = ws;
+            if (oldWs !== ws && oldWs.readyState === oldWs.OPEN) {
+                try {
+                    oldWs.close(1000, 'reconnected');
+                } catch {}
+            }
+            logMessage(`[Server] player ${playerId} reconnected to ${id}`, 'log');
+            return {
+                ok: true,
+                session: sesh,
+                player: existing,
+                isFirst: false, 
+                reconnected: true,
+            }
+        }
         if (sesh.state === 'finished') {
             // TODO
             return { ok: false, reason: 'finished' };
@@ -104,26 +128,24 @@ export class SessionRegistry {
 
         const isFirst = sesh.players.size === 0;
         const slot: PlayerSlot = isFirst ? 'left' : 'right';
-        let pid: string;
-        do {
-            pid = nanoid(8);
-        } while (sesh.players.has(pid));
 
         const player: Player = {
-            id: pid,
+            id: playerId,
             ws,
             slot,
             placed: 0,
             solved: false,
+            reconnectGrace: null,
         };
 
-        sesh.players.set(pid, player);
+        sesh.players.set(playerId, player);
         
         return {
             ok: true,
             session: sesh,
             player,
-            isFirst
+            isFirst,
+            reconnected: false,
         }
     }
 
@@ -131,16 +153,14 @@ export class SessionRegistry {
      * Removes a player from a session. When the last player leaves, the
      * session is deleted from the registry cleanly.
      */
-    leave(id: string, pid: string) : void {
+    leave(id: string, pid: string): void {
         const sesh = this.sessions.get(id);
         if (!sesh) return;
-        
-        logMessage('Player has left the room.', 'log');
-
+        const player = sesh.players.get(pid);
+        if (player?.reconnectGrace) clearTimeout(player.reconnectGrace);
         sesh.players.delete(pid);
-        if (sesh.players.size === 0) {
-            this.sessions.delete(id);
-        }
+        if (sesh.players.size === 0) this.sessions.delete(id);
+        logMessage('Player has left the room.', 'log');
     }
 
     /**

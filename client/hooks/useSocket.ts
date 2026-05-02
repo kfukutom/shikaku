@@ -27,8 +27,8 @@ export function useSocket(sessionId: string | undefined, onMessage: MessageHandl
         }
 
         let cancelled = false;
-        const socket = new WebSocket(`${WS_URL}/duel/${sessionId}`);
-        //const socket = new WebSocket(`${WS_URL}/duel/${sessionId}?playerId=${playerId}`);
+        //const socket = new WebSocket(`${WS_URL}/duel/${sessionId}`);
+        const socket = new WebSocket(`${WS_URL}/duel/${sessionId}?playerId=${playerId}`);
         ws.current = socket;
 
         socket.onopen = () => {
@@ -70,12 +70,6 @@ export function useSocket(sessionId: string | undefined, onMessage: MessageHandl
     const sendSolved = useCallback(() => {
         ws.current?.send(JSON.stringify({ type: "solved" }));
     }, []);
-
-    // const sendLeftRoom = useCallback(() => {
-    //     ws.current?.send(
-    //         JSON.stringify({ value: 'leave' })
-    //     );
-    // }, []);
 
     return { connected, sendPlace, sendEvict, sendSolved };
 }

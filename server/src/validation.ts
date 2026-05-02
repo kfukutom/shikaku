@@ -63,7 +63,6 @@ export function validatePlacement(
             };
         }
     }
-
     if (hits.length === 0) {
         return { 
             valid: false,
