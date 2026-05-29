@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import NavBar from "../components/NavBar";
 
+type visualTypes = 'numbers-only' | 'one-rect' | 'area-count';
 type SectionCard = {
     id: number;
     eyebrow: string;
     title: string;
     body: string;
+    visual: visualTypes;
 };
 
 const sections: SectionCard[] = [
@@ -14,12 +16,14 @@ const sections: SectionCard[] = [
         eyebrow: '01 - The grid',
         title: 'Every puzzle starts with just numbers.',
         body: 'Shikaku is played on a simple, rectangular grid. There exists a handful of cells containing a number - these are your clues.',
+        visual: 'numbers-only',
     },
     {
         id: 1,
         eyebrow: '02 - One number, one rectangle',
         title: 'Each clue belongs to its own rectangle.',
         body: 'Your job is very simple: draw rectangles that divide the entire grid. Partition them so that exatly one numbered cell - never two, never zero.',
+        visual: 'one-rect',
     }
 ];
 
@@ -61,7 +65,7 @@ export default function Learn() {
             <NavBar text="Back" section="Learn" />
 
             {/* 1: a generic title card */}
-            <header className="max-w-6xl mx-auto px-8 pt-10 pb-16">
+            <header className="max-w-6xl mx-auto px-8 pt-10 pb-55">
                 <p className="text-xs tracking-widest uppercase text-stone-500 mb-6">
                     A one-minute primer
                 </p>
@@ -106,6 +110,63 @@ export default function Learn() {
                     ))}
                 </div>
             </div>
+
+            
+            {/* Stick Grid, right item */}
+            <div className="hidden md:block">
+                    <div className="sticky top-0 h-screen flex items-center">
+                        <div className="relative w-full aspect-square rounded-2xl bg-stone-950 border border-stone-800 p-8">
+                            {/* Shikaku grid rendered here */}
+
+                            {sections.map((section, i) => (
+                                <div 
+                                    key={section.id}
+                                    className="absolute inset-0 p-8 flex items-center justify-center transition-opacity duration-700 ease-out"
+                                    style={{opacity: activeIndex === i ? 1:0}}
+                                > 
+                                    { /* <LearnGrid visual={section.visual} /> */ }
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+            </div>
         </div>
     )
 }
+
+// type Rectangle = {
+//     row: number;
+//     col: number;
+//     w: number;
+//     h: number;
+//     hue: 'amber' | 'sky' | 'emerald' | 'rose';  // strict hue types for this demo
+// };
+
+// const PUZZLE_COLS: number = 4;
+// const PUZZLE_ROWS = 4;
+
+// function LearnGrid({ visual }: { visual: visualTypes }) {
+    
+//     // change the demonstrated clue placement based on step
+//     const rectArray: Rectangle[] = (() => {
+//         switch(visual) {
+//             case 'numbers-only': return [];
+//             case 'one-rect': return [];
+//         }
+//     })();
+
+//     const cellSize = 64;
+//     const padding = 12;
+//     const width = PUZZLE_COLS * cellSize + padding * 2;
+//     const height = PUZZLE_ROWS * cellSize + padding * 2;
+
+//     return (
+//         <svg
+//             viewBox={`0 0 ${width} ${height}`}
+//             className='w-full h-full max-w-md'
+//             xmlns="http://www.w3.org/2000/svg"
+//         >
+
+//         </svg>
+//     );
+// }
