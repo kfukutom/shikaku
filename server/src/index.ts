@@ -12,8 +12,6 @@ import { send, startGame, handleMessage, handleDisconnect } from "./handlers.js"
 import { generatePuzzle } from "./puzzle.js";
 import { SessionRegistry } from "./sessions.js";
 import { logMessage } from "./helper/helper.js";
-import { connect } from "http2";
-import { start } from "repl";
 
 // Configs:
 const PORT = Number(process.env.PORT) || 3001;
