@@ -9,6 +9,11 @@ html, body, #root {
     background-color: #1c1917;
     overscroll-behavior: none;
     font-family: sans-serif, monospace, Georgia;
+    scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+    display: none;
 }
 
 /* animations for buttons */
