@@ -47,12 +47,12 @@ function Modal({ onClose, onCreated }: ModalProps) {
             {/* backdrop */}
             <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
-            <div className="relative bg-stone-800 border border-stone-700 px-7 py-6 w-80">
+            <div className="relative bg-stone-800 border border-stone-900 px-7 py-6 w-80">
 
-                <h2 className="text-stone-100 text-base font-italic tracking-widest mb-1">
+                <h2 className="text-stone-100 text-base font-italic tracking-widest mb-2.5 transform: uppercase">
                     New Duel
                 </h2>
-                <p className="text-stone-500 text-xs mb-5">
+                <p className="text-stone-500 text-xs mb-6 tracking-wide">
                     Let's choose a grid size, then you may send the link to a friend or whomever.
                 </p>
 
