@@ -3,5 +3,8 @@ packages:
   - client
   - server
 
+allowBuilds:
+  esbuild: false
+
 onlyBuiltDependencies:
   - esbuild
