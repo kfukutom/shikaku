@@ -18,3 +18,8 @@ export function logMessage(msg: string, flag: 'log' | 'error') {
         }
     }
 }
+
+// helper for exhaustiveness checking cases
+export function assertNever(x: never): never {
+    throw new Error("Unexpected object: " + x);
+}
