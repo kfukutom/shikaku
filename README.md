@@ -6,7 +6,7 @@ This is a monorepo with mainly three packages:
 
 - **`packages/core`** - Board representation, tile shapes, puzzle generation via backtracking. Shared by both client and the server. Using deep abstractions and subtype polymorphism for individual tile representations.
 - **`client`** - React, TailwindCSS UI. Drag to draw rectangles, undo, skip, and auto-scaling difficulty.
-- **`server`** - Express, WebSocket server for a ~*proposed*~ real-time duel mode. Handles session creation, move validation, and opponent broadcasting.
+- **`server`** - Express, WebSocket server for a real-time duel mode. Handles session creation, move validation, and opponent broadcasting.
 
 *Initial Duel UI (as of 4/18/26)*
 
