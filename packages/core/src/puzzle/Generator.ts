@@ -48,7 +48,7 @@ export default class GameGenerator {
 
         }
 
-        throw new Error("Failed to generate a valid parittion.");
+        throw new Error("Failed to generate a valid partition.");
     }
 
 
