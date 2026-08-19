@@ -14,7 +14,7 @@ export function logMessage(msg: string, flag: 'log' | 'error') {
             break;
         }
         default: {
-            // never
+            assertNever(flag);
         }
     }
 }

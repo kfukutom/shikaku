@@ -1,11 +1,13 @@
 import type { ServerMessage, ClientMessage } from "./types.js";
 import type { Bounds } from "@tiles/core";
+import { createTile } from "@tiles/core";
 import { WebSocket } from "ws";
 
 // fixed
 import type { Player, Session, SessionRegistry } from "./sessions.js";
 import { ClientMessageSchema } from "./schemas.js";
 import { validatePlacement } from "./validation.js";
+import { assertNever } from "./helper/helper.js";
 
 const OPPONENT_COLOR = "rgba(168, 162, 150, 0.35)";
 
@@ -20,26 +22,77 @@ function sendTo(player: Player, msg: ServerMessage) : void {
     send(player.ws, msg);
 }
 
+/** Push the current progress of `player` to their opponent. */
+function sendProgress(session: Session, player: Player, opponent: Player | null): void {
+    if (!opponent) return;
+
+    sendTo(opponent, {
+        type: 'opponent_progress',
+        placed: player.tiles.size,
+        total: session.puzzle.tileCount,
+    });
+}
+
 //Game Start
-/** called whent he SECOND player joins, sends the puzzle to both connected clients. */
+/**
+ * Hand a player everything they need to render the board. Used both on a
+ * normal start and when a returning player rejoins a game already running.
+ */
+export function sendStart(session: Session, player: Player): void {
+    sendTo(player, {
+        type: 'start',
+        puzzle: {
+            rows: session.puzzle.rows,
+            cols: session.puzzle.cols,
+            clues: session.puzzle.clues,
+            // the countdown UI needs to know when the clock actually started
+            gameStartTime: session.startedAt ?? session.createdAt,
+        },
+        playerSlot: player.slot,
+    });
+}
+
+/** called when the SECOND player joins, sends the puzzle to both connected clients. */
 export function startGame(session: Session): void {
     session.state = 'playing';
-    session.createdAt = Date.now();
+    session.startedAt = Date.now();
 
     for (const player of session.players.values()) {
-        // send to the client the puzzle
-        // added the current start time to support the countdown UI
-        sendTo(player, {
-            type: 'start',
-            puzzle: {
-                rows: session.puzzle.rows,
-                cols: session.puzzle.cols,
-                clues: session.puzzle.clues,
-                gameStartTime: session.createdAt,
-            },
-            playerSlot: player.slot,
-        });
+        sendStart(session, player);
     }
+}
+
+/**
+ * Replay the outcome to a player who rejoined after the game already ended.
+ * Without this they'd get silence and sit on the connecting screen forever,
+ * with no way back to the lobby.
+ */
+export function sendResult(session: Session, player: Player): void {
+    if (!session.winner) return;
+
+    sendTo(player, {
+        type: 'result',
+        winner: session.winner === player.id ? 'you' : 'opponent',
+    });
+}
+
+/**
+ * Wipe a reconnecting player's server-side progress and bring the opponent's
+ * mirrored view back in line. The returning client rebuilds from an empty
+ * board, so anything still held here would desync the two.
+ */
+export function resetPlayerProgress(session: Session, player: Player, opponent: Player | null): void {
+    for (const tileId of player.tiles.keys()) {
+        if (opponent) {
+            sendTo(opponent, { type: 'opponent_evict', tileId });
+        }
+        player.board.evict(tileId);
+    }
+
+    player.tiles.clear();
+    player.solved = false;
+
+    sendProgress(session, player, opponent);
 }
 
 // Message Router
@@ -63,7 +116,7 @@ export function handleMessage(sessions: SessionRegistry, session: Session, playe
         sendTo(player,
             {
                 type: 'error',
-                message: 'Invalid mesage format'
+                message: 'Invalid message format'
             }
         );
 
@@ -89,7 +142,7 @@ export function handleMessage(sessions: SessionRegistry, session: Session, playe
             handlePlace(session, player, opponent, msg.tileId, msg.bounds);
             break;
         }
-        
+
         case 'evict': {
             handleEvict(session, player, opponent, msg.tileId);
             break;
@@ -101,20 +154,24 @@ export function handleMessage(sessions: SessionRegistry, session: Session, playe
         }
 
         default: {
-            // never case
-            const exhaust: never = msg;
             sendTo(player,
                 {
                     type: 'error',
                     message: 'Unknown message type'
                 }
             );
+            assertNever(msg);
         }
     }
 }
 
 // Individual Handlers
 
+/**
+ * A placement is only accepted once it clears every rule the client also
+ * enforces locally. The client is untrusted, so the server keeps its own
+ * Board per player and re-derives the result from scratch.
+ */
 function handlePlace(
     session: Session,
     player: Player,
@@ -139,7 +196,28 @@ function handlePlace(
         return;
     }
 
-    player.placed++;
+    if (player.tiles.has(tileId)) {
+        sendTo(player, { type: 'error', message: 'Tile already placed' });
+        return;
+    }
+
+    // one clue, one rectangle. n is bounded by the tile count (<= 144), so
+    // scanning beats keeping a second index in sync.
+    for (const clueId of player.tiles.values()) {
+        if (clueId === check.clue.tileId) {
+            sendTo(player, { type: 'error', message: 'Clue already solved' });
+            return;
+        }
+    }
+
+    // Board owns the overlap rule; canPlace covers bounds + occupancy.
+    const tile = createTile(tileId, bounds);
+    if (!player.board.place(tile)) {
+        sendTo(player, { type: 'error', message: 'Overlaps an existing tile' });
+        return;
+    }
+
+    player.tiles.set(tileId, check.clue.tileId);
 
     // broadcast to opponent so their board updates in real time
     if (opponent) {
@@ -149,12 +227,13 @@ function handlePlace(
             tileId,
             color: OPPONENT_COLOR,
         });
+    }
 
-        sendTo(opponent, {
-            type: 'opponent_progress',
-            placed: player.placed,
-            total: session.puzzle.tileCount,
-        });
+    sendProgress(session, player, opponent);
+
+    // the server decides when the puzzle is done, not the client
+    if (isSolved(session, player)) {
+        declareWinner(session, player, opponent);
     }
 }
 
@@ -164,19 +243,44 @@ function handleEvict(
     opponent: Player | null,
     tileId: string,
 ) : void {
-    player.placed = Math.max(0, player.placed - 1);
+    // evict() returns an empty array for an id that was never placed, which
+    // is how a bogus or duplicate evict gets ignored instead of skewing progress
+    const cleared = player.board.evict(tileId);
+    if (cleared.length === 0) return;
+
+    player.tiles.delete(tileId);
 
     if (opponent) {
         sendTo(opponent, {
             type: 'opponent_evict',
             tileId,
         });
+    }
 
-        sendTo(opponent, {
-            type: 'opponent_progress',
-            placed: player.placed,
-            total: session.puzzle.tileCount,
-        });
+    sendProgress(session, player, opponent);
+}
+
+/**
+ * True once the player has covered every clue and left no empty cell.
+ * Both halves matter: the clue count alone would accept a board with gaps.
+ */
+function isSolved(session: Session, player: Player): boolean {
+    return player.tiles.size === session.puzzle.tileCount && player.board.isFull();
+}
+
+function declareWinner(
+    session: Session,
+    player: Player,
+    opponent: Player | null,
+) : void {
+    player.solved = true;
+    session.winner = player.id;
+    session.state = 'finished';
+
+    sendTo(player, { type: 'result', winner: 'you' });
+
+    if (opponent) {
+        sendTo(opponent, { type: 'result', winner: 'opponent' });
     }
 }
 
@@ -188,15 +292,13 @@ function handleSolved(
     // ignore duplicate solve messages or if someone already won
     if (session.winner || player.solved) return;
 
-    player.solved = true;
-    session.winner = player.id;
-    session.state = 'finished';
-
-    sendTo(player, { type: 'result', winner: 'you' });
-
-    if (opponent) {
-        sendTo(opponent, { type: 'result', winner: 'opponent' });
+    // a client claiming victory proves nothing; check our own board
+    if (!isSolved(session, player)) {
+        sendTo(player, { type: 'error', message: 'Board is not solved' });
+        return;
     }
+
+    declareWinner(session, player, opponent);
 }
 
 // Disconnect

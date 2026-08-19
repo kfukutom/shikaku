@@ -1,5 +1,6 @@
 import type WebSocket from "ws";
 import { nanoid } from "nanoid";
+import { Board } from "@tiles/core";
 // fixed
 import { ServerPuzzle } from "./puzzle.js";
 import { logMessage } from "./helper/helper.js";
@@ -14,7 +15,14 @@ export interface Player {
     ws: WebSocket;
     /** Which side of the board this player displays on. */
     slot: PlayerSlot;
-    placed: number;
+    /**
+     * Server-side mirror of what this player has actually placed. Same Board
+     * abstraction the client drives through useBoard, so overlap and occupancy
+     * rules come from @tiles/core rather than being re-implemented here.
+     */
+    board: Board;
+    /** Client tileId -> the clue tileId that placement covers. */
+    tiles: Map<string, string>;
     solved: boolean;
     // time: number;
     reconnectGrace: NodeJS.Timeout | null;
@@ -27,7 +35,10 @@ export interface Session {
     players: Map<string, Player>;
     winner: string | null;
     state: SessionState;
+    /** Fixed at creation. TTL pruning measures against this. */
     createdAt: number;
+    /** Set when the second player arrives; drives the client countdown. */
+    startedAt: number | null;
 };
 
 /**
@@ -40,14 +51,30 @@ export type JoinRes =
     | { ok: true; session: Session; player: Player; isFirst: false; reconnected: true }
     | { ok: false; reason: "not_found" | "full" | "finished" };
 
+export interface RegistryOptions {
+    /** How long a session lives before pruneStale() reaps it. */
+    ttlMs: number;
+    /** How long a dropped player keeps their seat before being removed. */
+    reconnectGraceMs: number;
+    /**
+     * Shorter TTL for rooms whose game already ended. Nobody can play in one
+     * again, so they shouldn't squat memory for the full ttlMs.
+     */
+    finishedTtlMs: number;
+}
+
 
 // SessionRegistry:
 export class SessionRegistry {
     private readonly sessions = new Map<string, Session>();
     private readonly ttlMs: number;
+    private readonly reconnectGraceMs: number;
+    private readonly finishedTtlMs: number;
 
-    constructor(opts?: {ttlMs: number }) {
-        this.ttlMs = opts!.ttlMs;
+    constructor(opts: RegistryOptions) {
+        this.ttlMs = opts.ttlMs;
+        this.reconnectGraceMs = opts.reconnectGraceMs;
+        this.finishedTtlMs = opts.finishedTtlMs;
     }
 
     /** Number of active sessions. */
@@ -77,6 +104,7 @@ export class SessionRegistry {
             winner: null,
             state: 'waiting',
             createdAt: Date.now(),
+            startedAt: null,
         };
 
         this.sessions.set(
@@ -87,7 +115,7 @@ export class SessionRegistry {
     }
 
     /**
-     * Attempt to place a new player into a session. Existence, capacity, 
+     * Attempt to place a new player into a session. Existence, capacity,
      * and game-state checks all happen in one synchronous pass. So there
      * exists no window for two joins to race past the capacity check.
      */
@@ -108,21 +136,27 @@ export class SessionRegistry {
                     oldWs.close(1000, 'reconnected');
                 } catch {}
             }
+
+            /**
+             * Note: the caller must follow up with resetPlayerProgress() from
+             * handlers.ts. The returning client remounts with an empty
+             * GameBoard, so the server-side mirror has to be wiped to match —
+             * but the opponent needs the old tile ids to clear their view
+             * first, so the wipe can't happen here.
+             */
             logMessage(`[Server] player ${playerId} reconnected to ${id}`, 'log');
             return {
                 ok: true,
                 session: sesh,
                 player: existing,
-                isFirst: false, 
+                isFirst: false,
                 reconnected: true,
             }
         }
         if (sesh.state === 'finished') {
-            // TODO
             return { ok: false, reason: 'finished' };
         }
         if (sesh.players.size >= 2) {
-            // TODO
             return { ok: false, reason: 'full' };
         }
 
@@ -133,13 +167,14 @@ export class SessionRegistry {
             id: playerId,
             ws,
             slot,
-            placed: 0,
+            board: new Board(sesh.puzzle.rows, sesh.puzzle.cols),
+            tiles: new Map(),
             solved: false,
             reconnectGrace: null,
         };
 
         sesh.players.set(playerId, player);
-        
+
         return {
             ok: true,
             session: sesh,
@@ -147,6 +182,30 @@ export class SessionRegistry {
             isFirst,
             reconnected: false,
         }
+    }
+
+    /**
+     * Hold a dropped player's seat open for the grace window instead of
+     * evicting them the instant their socket closes. A refresh reconnects
+     * before this fires; a real disconnect lets it run, which removes the
+     * player and invokes `onExpire` so the caller can notify the opponent.
+     */
+    beginReconnectGrace(id: string, pid: string, onExpire: () => void): void {
+        const sesh = this.sessions.get(id);
+        if (!sesh) return;
+
+        const player = sesh.players.get(pid);
+        if (!player) return;
+
+        if (player.reconnectGrace) clearTimeout(player.reconnectGrace);
+
+        player.reconnectGrace = setTimeout(() => {
+            player.reconnectGrace = null;
+            this.leave(id, pid);
+            onExpire();
+        }, this.reconnectGraceMs);
+
+        logMessage(`[Server] player ${pid} dropped; holding seat in ${id}`, 'log');
     }
 
     /**
@@ -180,17 +239,20 @@ export class SessionRegistry {
     }
 
     /**
-     * Close and remove sessions older than the TTL. Returns the number
-     * that weren't pruned. Safe to call on some interval.
+     * Close and remove sessions past their TTL. Finished rooms expire on the
+     * shorter clock since they can never be played again. Returns how many
+     * were pruned. Safe to call on some interval.
      */
     pruneStale(): number {
         const now = Date.now();
         let pruned = 0;
 
         for (const [id, sesh] of this.sessions) {
-            if (now - sesh.createdAt <= this.ttlMs) continue;
+            const ttl = sesh.state === 'finished' ? this.finishedTtlMs : this.ttlMs;
+            if (now - sesh.createdAt <= ttl) continue;
 
             for (const player of sesh.players.values()) {
+                if (player.reconnectGrace) clearTimeout(player.reconnectGrace);
                 try {
                     player.ws.close(1000, 'Session expired');
                 } catch {
@@ -202,7 +264,10 @@ export class SessionRegistry {
             ++pruned;
         }
 
-        logMessage(`[Server]: Pruned session count: ${pruned} at ${now}`, 'log');
+        if (pruned > 0) {
+            logMessage(`[Server]: Pruned session count: ${pruned} at ${now}`, 'log');
+        }
+
         return pruned;
     }
 }

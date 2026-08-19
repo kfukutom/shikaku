@@ -2,20 +2,29 @@ import * as http from "http";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
-import { nanoid } from "nanoid";
 import { WebSocketServer } from "ws";
 import type WebSocket from "ws";
 import rateLimit from "express-rate-limit";
 
 // fixed
-import { send, startGame, handleMessage, handleDisconnect } from "./handlers.js";
+import {
+    send,
+    sendStart,
+    sendResult,
+    startGame,
+    handleMessage,
+    handleDisconnect,
+    resetPlayerProgress,
+} from "./handlers.js";
 import { generatePuzzle } from "./puzzle.js";
 import { SessionRegistry } from "./sessions.js";
-import { logMessage } from "./helper/helper.js";
+import { CreateRoomSchema } from "./schemas.js";
+import { logMessage, assertNever } from "./helper/helper.js";
 
 // Configs:
 const PORT = Number(process.env.PORT) || 3001;
 const ROOM_TTL_MS = 60 * 60 * 1000;
+const FINISHED_TTL_MS = 5 * 60 * 1000; // dead rooms shouldn't squat for the full hour
 const PRUNE_INTERVAL_MS = 5 * 60 * 1000; // every 5 minutes
 const HEARTBEAT_INTERVAL_MS = 30_000;
 const MAX_CONNECTIONS_PER_IP = 20;
@@ -33,7 +42,9 @@ const allowedOrigins: string[] = [
 
 // State:
 const sessions = new SessionRegistry({
-    ttlMs: ROOM_TTL_MS
+    ttlMs: ROOM_TTL_MS,
+    reconnectGraceMs: RECONNECT_GRACE_MS,
+    finishedTtlMs: FINISHED_TTL_MS,
 });
 const connectionsPerIp = new Map<string, number>();
 
@@ -41,6 +52,10 @@ const connectionsPerIp = new Map<string, number>();
 // HTTP:
 const app = express();
 app.use(helmet());
+
+// Railway terminates TLS and forwards x-forwarded-for. Without this the rate
+// limiter keys every request to the proxy's address instead of the real client.
+app.set('trust proxy', 1);
 
 app.use(
     cors({
@@ -66,7 +81,7 @@ app.use(
     '/create',
     rateLimit({
         windowMs: 60_000,
-        max: 10,
+        limit: 10,
         standardHeaders: true,
     })
 );
@@ -76,8 +91,30 @@ app.use(
  * The puzzle is generated server-side.
  */
 app.post('/create', (req, res) => {
-    const { rows = 6, cols = 6, minArea = 2, maxArea = 8 } = req.body;
-    const puzzle = generatePuzzle(rows, cols, minArea, maxArea);
+    const parsed = CreateRoomSchema.safeParse(req.body ?? {});
+
+    if (!parsed.success) {
+        // generation is CPU-bound and synchronous, so bad dimensions have to
+        // be rejected before they ever reach the generator
+        const issue = parsed.error.issues[0];
+        res.status(400).json({
+            error: issue ? `${issue.path.join('.') || 'body'}: ${issue.message}` : 'Invalid request',
+        });
+        return;
+    }
+
+    const { rows, cols, minArea, maxArea } = parsed.data;
+
+    let puzzle;
+    try {
+        puzzle = generatePuzzle(rows, cols, minArea, maxArea);
+    } catch (err) {
+        // the generator gives up after a bounded number of backtracking attempts
+        logMessage(`[Server] puzzle generation failed: ${(err as Error).message}`, 'error');
+        res.status(503).json({ error: 'Could not generate a puzzle, try again' });
+        return;
+    }
+
     const sesh = sessions.create(puzzle);
 
     res.json({
@@ -184,24 +221,38 @@ wss.on('connection', (ws: WebSocket, req) => {
     }
     const { session, player, isFirst, reconnected } = joinResult;
 
+    /**
+     * Every path below has to put a message on the wire. The client opens on a
+     * "Connecting..." screen and only leaves it when the server says something,
+     * so any silent branch strands the player with no way back to the lobby.
+     */
     try {
         if (reconnected) {
             // returning player --> re-send whatever they need to rebuild the UI
-            const opponent = sessions.opponentOf(session, player.id);
+            switch (session.state) {
+                case 'playing': {
+                    // their board comes back empty, so drop the progress the
+                    // server was holding and clear the opponent's mirror too
+                    resetPlayerProgress(session, player, sessions.opponentOf(session, player.id));
+                    sendStart(session, player);
+                    break;
+                }
 
-            if (session.state === 'playing') {
-                send(ws, {
-                    type: 'start',
-                    puzzle: {
-                        rows: session.puzzle.rows,
-                        cols: session.puzzle.cols,
-                        clues: session.puzzle.clues,
-                        gameStartTime: session.createdAt,
-                    },
-                    playerSlot: player.slot,
-                });
-            } else if (session.state === 'waiting') {
-                send(ws, { type: 'waiting', sessionId: session.id });
+                case 'finished': {
+                    // the duel ended while they were away; show the outcome
+                    // rather than a board they can no longer play
+                    sendResult(session, player);
+                    break;
+                }
+
+                case 'waiting': {
+                    send(ws, { type: 'waiting', sessionId: session.id });
+                    break;
+                }
+
+                default: {
+                    assertNever(session.state);
+                }
             }
         } else if (isFirst) {
             send(ws, { type: 'waiting', sessionId: session.id });
@@ -209,16 +260,12 @@ wss.on('connection', (ws: WebSocket, req) => {
             logMessage(`[Server] All players have arrived, starting game for ${session.id}`, 'log');
             startGame(session);
         } else if (session.state === 'playing') {
-            send(ws, {
-                type: 'start',
-                puzzle: {
-                    rows: session.puzzle.rows,
-                    cols: session.puzzle.cols,
-                    clues: session.puzzle.clues,
-                    gameStartTime: session.createdAt,
-                },
-                playerSlot: player.slot,
-            });
+            sendStart(session, player);
+        } else {
+            // join() rejects newcomers to a finished room, so this is unreachable
+            // in practice — but never leave a connected client with nothing.
+            fail('Game already finished!');
+            return;
         }
     } catch (err) {
         logMessage(`[Server] error during game start: ${(err as Error).message}`, 'error');
@@ -234,6 +281,8 @@ wss.on('connection', (ws: WebSocket, req) => {
     ws.on('pong', () => { alive = true; });
     heartbeat = setInterval(() => {
         if (!alive) {
+            // stop pinging a socket we're about to kill; 'close' handles the rest
+            if (heartbeat) clearInterval(heartbeat);
             ws.terminate();
             return;
         }
@@ -251,6 +300,8 @@ wss.on('connection', (ws: WebSocket, req) => {
     });
 
     ws.on('close', () => {
+        // this connection is done either way — free its slot and heartbeat
+        release();
 
         const current = session.players.get(player.id);
         if (current?.ws !== ws) {
@@ -260,9 +311,14 @@ wss.on('connection', (ws: WebSocket, req) => {
 
         logMessage(`[Server] ws closed at ${new Date().toISOString()}`, 'log');
         try {
-            const opponent = sessions.opponentOf(session, player.id);
-            handleDisconnect(session, opponent);
-            sessions.leave(session.id, player.id);
+            /**
+             * Hold the seat rather than tearing the room down. A refresh gets
+             * back in before the grace expires, and the opponent never sees a
+             * blip — so `opponent_disconnected` now means genuinely gone.
+             */
+            sessions.beginReconnectGrace(session.id, player.id, () => {
+                handleDisconnect(session, sessions.opponentOf(session, player.id));
+            });
         } catch (err) {
             logMessage(`[Server] error during close cleanup: ${(err as Error).message}`, 'error');
         }
