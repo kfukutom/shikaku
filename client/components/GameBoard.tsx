@@ -4,7 +4,6 @@ import type { Tile, Bounds, Clue, BoardObserver } from "@tiles/core";
 
 import { useBoard } from "../hooks/useBoard";
 import { useDrag } from "../hooks/useDrag";
-import { useClueMap } from "../hooks/useClueMap";
 import { TILE_COLORS } from "../utils/constants";
 
 interface PlacedTile {
@@ -38,7 +37,6 @@ function posInBounds(r: number, c: number, b: Bounds): boolean {
 export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlace, onEvict, disabled = false }: GameBoardProps) {
     const { place, evict, reset, addObserver } = useBoard(rows, cols);
     const drag = useDrag();
-    const clueMap = useClueMap(clues);
 
     const [placed, setPlaced] = useState<PlacedTile[]>([]);
     const [solved, setSolved] = useState(false);
@@ -186,56 +184,52 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
         });
     }
 
+    // Cells, tile overlay, and clue overlay all share this template so they line up.
+    const gridTemplate = {
+        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+        gridTemplateRows: `repeat(${rows}, 1fr)`,
+    };
+
+    const gridArea = (b: Bounds) => ({
+        gridColumn: `${b.col + 1} / span ${b.width}`,
+        gridRow: `${b.row + 1} / span ${b.height}`,
+    });
+
     return (
         <div className="flex flex-col items-center gap-4">
 
             {/* error or area indicator */}
             <div className="h-6 flex items-center justify-center">
                 <p className={`
-                    text-sm font-medium tracking-wide transition-opacity duration-300
-                    ${error ? "opacity-100 text-red-400"
-                        : drag.anchor ? "opacity-100 text-stone-500"
+                    text-[13px] font-medium tabular-nums transition-opacity duration-300
+                    ${error ? "opacity-100 text-red"
+                        : drag.anchor ? "opacity-100 text-label-secondary"
                         : "opacity-0"}
                 `}>
-                    {error ?? (drag.anchor && drag.area > 0 ? `Area: ${drag.area}` : "\u00A0")}
+                    {error ?? (drag.anchor && drag.area > 0 ? `Area ${drag.area}` : "\u00A0")}
                 </p>
             </div>
 
-            {/* grid */}
-            <div
-                className="inline-grid border border-stone-700 select-none"
-                style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
-                onMouseLeave={() => { if (drag.isActive.current) drag.cancel(); }}
-                onMouseUp={handleMouseUp}
-                onTouchEnd={(e) => {
-                    e.preventDefault();
-                    handleMouseUp();
-                }}
-            >
-                {Array.from({ length: rows }, (_, r) =>
-                    Array.from({ length: cols }, (_, c) => {
-                        const owner = findOwner(r, c);
-                        const clue = clueMap.get(`${r},${c}`) ?? null;
-                        const inPreview = drag.preview ? posInBounds(r, c, drag.preview) : false;
-                        const cluePlaced = clue ? placed.some(p => p.clueId === clue.tileId) : false;
+            {/* board */}
+            <div className="relative select-none overflow-hidden rounded-2xl border border-separator bg-separator shadow-card">
 
-                        const isSelected = owner && selectedTile === owner.tile.id;
-
-                        const bg = owner
-                            ? isSelected
-                                ? "rgba(232, 232, 232, 0.1)"
-                                : owner.color
-                            : inPreview
-                                ? "rgba(168, 162, 150, 0.25)"
-                                : "transparent";
-
-                        return (
+                {/* grid */}
+                <div
+                    className="grid gap-px"
+                    style={gridTemplate}
+                    onMouseLeave={() => { if (drag.isActive.current) drag.cancel(); }}
+                    onMouseUp={handleMouseUp}
+                    onTouchEnd={(e) => {
+                        e.preventDefault();
+                        handleMouseUp();
+                    }}
+                >
+                    {Array.from({ length: rows }, (_, r) =>
+                        Array.from({ length: cols }, (_, c) => (
                             <div
                                 key={`${r}-${c}`}
                                 data-cell={`${r},${c}`}
-                                className="w-14 h-14 border border-stone-700 flex items-center justify-center
-                                           cursor-pointer transition-all duration-300 ease-out"
-                                style={{ backgroundColor: bg }}
+                                className="board-cell w-14 h-14 cursor-pointer"
                                 onMouseDown={e => { e.preventDefault(); handleMouseDown(r, c); }}
                                 onMouseEnter={() => drag.move({ row: r, col: c })}
                                 onTouchStart={(e)=> {
@@ -258,42 +252,78 @@ export default function GameBoard({ rows, cols, solution, clues, onSolve, onPlac
                                         }
                                     }
                                 }}
-                            >
-                                {clue && (
-                                    <span className={`
-                                        text-lg font-bold pointer-events-none
-                                        transition-colors duration-200
-                                        ${cluePlaced ? "text-stone-500" : "text-stone-200"}
-                                    `}>
-                                        {clue.area}
-                                    </span>
-                                )}
-                            </div>
+                            />
+                        ))
+                    )}
+                </div>
+
+                {/* placed tiles + drag preview */}
+                <div
+                    className="pointer-events-none absolute inset-0 grid gap-px"
+                    style={gridTemplate}
+                    aria-hidden
+                >
+                    {drag.preview && (
+                        <div
+                            className="m-0.5 rounded-lg bg-fill ring-1 ring-inset ring-label/10"
+                            style={gridArea(drag.preview)}
+                        />
+                    )}
+                    {placed.map(p => {
+                        const isSelected = selectedTile === p.tile.id;
+                        return (
+                            <div
+                                key={p.tile.id}
+                                className={`
+                                    m-0.5 rounded-lg animate-tile-in
+                                    transition-[box-shadow,opacity] duration-200
+                                    ${isSelected ? "ring-2 ring-inset ring-label" : ""}
+                                `}
+                                style={{ ...gridArea(p.tile.bounds), backgroundColor: p.color }}
+                            />
                         );
-                    })
-                )}
+                    })}
+                </div>
+
+                {/* clue numbers */}
+                <div
+                    className="pointer-events-none absolute inset-0 grid gap-px"
+                    style={gridTemplate}
+                    aria-hidden
+                >
+                    {clues.map(clue => {
+                        const cluePlaced = placed.some(p => p.clueId === clue.tileId);
+                        return (
+                            <span
+                                key={clue.tileId}
+                                className={`
+                                    flex items-center justify-center
+                                    text-[17px] font-semibold tabular-nums
+                                    transition-colors duration-200
+                                    ${cluePlaced ? "text-label-secondary" : "text-label"}
+                                `}
+                                style={{
+                                    gridColumn: clue.position.col + 1,
+                                    gridRow: clue.position.row + 1,
+                                }}
+                            >
+                                {clue.area}
+                            </span>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* controls */}
             {!disabled && (
-                <div className="h-6 flex items-center justify-center gap-4">
+                <div className="h-9 flex items-center justify-center gap-2">
                     {placed.length > 0 && !skipping && !solved && (
-                        <button
-                            onClick={handleUndo}
-                            className="text-xs tracking-widest uppercase text-stone-500
-                                       hover:text-stone-300 transition-colors duration-200
-                                       cursor-pointer px-3 py-1"
-                        >
+                        <button type="button" onClick={handleUndo} className="btn btn-tinted">
                             Undo
                         </button>
                     )}
                     {!skipping && placed.length < solution.length && (
-                        <button
-                            onClick={handleSkip}
-                            className="text-xs tracking-widest uppercase text-stone-500
-                                       hover:text-stone-300 transition-colors duration-200
-                                       cursor-pointer px-3 py-1"
-                        >
+                        <button type="button" onClick={handleSkip} className="btn btn-tinted">
                             Skip
                         </button>
                     )}
