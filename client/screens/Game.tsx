@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from "react";
-import { Header, SolvedBanner, GameBoard } from "../components";
+import { Header, SolvedBanner, GameBoard, NavBar, NavLink } from "../components";
 import { GameGenerator } from "@tiles/core";
 import { DIFFICULTY, FALLBACK_DIFFICULTY, LEVEL_LABELS } from "../utils/constants";
 import type { Tile, Clue } from "@tiles/core";
@@ -62,22 +62,30 @@ export default function Game() {
     }
 
     return (
-        <div className="min-h-screen bg-stone-900 text-stone-100 flex flex-col items-center justify-center gap-6 p-2">
-            <Header
-                grid={`${puzzle.rows} x ${puzzle.cols}`}
-                level={LEVEL_LABELS[puzzle.rows] ?? "GMI"}
-            />
+        <div className="min-h-dvh bg-canvas text-label">
+            <NavBar title="Shikaku">
+                <NavLink href="/shikaku/duel">Duel</NavLink>
+                <NavLink href="/shikaku/learn">Learn</NavLink>
+                <NavLink href="https://github.com/kfukutom/shikaku" external>GitHub</NavLink>
+            </NavBar>
 
-            <GameBoard
-                key={puzzle.id}
-                rows={puzzle.rows}
-                cols={puzzle.cols}
-                solution={puzzle.solution}
-                clues={puzzle.clues}
-                onSolve={handleSolve}
-            />
+            <main className="flex min-h-dvh flex-col items-center justify-center gap-8 px-4 pt-13 pb-8">
+                <Header
+                    grid={`${puzzle.rows} × ${puzzle.cols}`}
+                    level={LEVEL_LABELS[puzzle.rows] ?? "GMI"}
+                />
 
-            {solved && <SolvedBanner onPlayNext={handlePlayNext} />}
+                <GameBoard
+                    key={puzzle.id}
+                    rows={puzzle.rows}
+                    cols={puzzle.cols}
+                    solution={puzzle.solution}
+                    clues={puzzle.clues}
+                    onSolve={handleSolve}
+                />
+
+                {solved && <SolvedBanner onPlayNext={handlePlayNext} />}
+            </main>
         </div>
     );
 }

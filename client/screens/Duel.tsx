@@ -14,15 +14,28 @@ export default function Duel() {
 
     return (
         <>
-            <NavBar text="Back to solo" section="Duel" />
+            <NavBar back={{ href: "/shikaku/", label: "Solo" }} title="Duel" />
             <div className={`
-                min-h-screen bg-stone-900 text-stone-100 flex flex-col items-center
-                justify-center gap-6 transition-all duration-200
+                min-h-dvh bg-canvas text-label flex flex-col items-center
+                justify-center gap-8 px-6 pt-13 transition-[filter] duration-300 ease-apple
                 ${showModal ? "blur-xs" : ""}
             `}>
-                <p className="text-stone-400 text-sm tracking-wide text-center max-w-xs">
-                    Create a game and share the link with a friend. The puzzle starts when both players join.
-                </p>
+                <div className="flex max-w-sm flex-col items-center gap-4 text-center">
+                    {/* two offset tiles, SF Symbol-ish mark */}
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface shadow-card ring-1 ring-separator">
+                        <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
+                            <rect x="4" y="4" width="15" height="15" rx="4" fill="currentColor" className="text-label-tertiary" />
+                            <rect x="13" y="13" width="15" height="15" rx="4" fill="currentColor" className="text-label" />
+                        </svg>
+                    </div>
+
+                    <h1 className="text-[28px] font-semibold tracking-[-0.02em]">
+                        Play a friend
+                    </h1>
+                    <p className="text-[15px] leading-relaxed text-label-secondary">
+                        Create a game and share the link with a friend. The puzzle starts when both players join.
+                    </p>
+                </div>
 
                 <PrimaryBtn text="Create New Room" handleEvent={() => setShowModal(true)} />
             </div>

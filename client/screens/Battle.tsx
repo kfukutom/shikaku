@@ -9,6 +9,8 @@ import type { ServerMessage, PuzzlePayload } from "../hooks/useDuelTypes";
 import GameBoard from "../components/GameBoard";
 import OpponentBoard from "../components/OpponentBoard";
 import Countdown from "../components/Countdown";
+import NavBar from "../components/NavBar";
+import PrimaryBtn from "../components/PrimaryBtn";
 
 interface OpponentTile {
     tileId: string;
@@ -103,11 +105,14 @@ export default function Battle() {
 
     const gameOver = duelState === "finished";
 
+    const page = "min-h-dvh bg-canvas text-label flex flex-col items-center justify-center gap-6 px-4 pt-13 pb-8";
+
     // no session ID in the URL
     if (!sessionId) {
         return (
-            <div className="min-h-screen bg-stone-900 text-stone-100 flex items-center justify-center">
-                <p className="text-stone-500 text-sm">Missing session ID.</p>
+            <div className={page}>
+                <NavBar back={{ href: "/shikaku/duel", label: "Duel" }} />
+                <p className="text-[15px] text-label-secondary">Missing session ID.</p>
             </div>
         );
     }
@@ -115,23 +120,22 @@ export default function Battle() {
     // utilizing the date time object; create a start time countdown buffer
     if (duelState === "countdown" && startTime) {
         return (
-            <Countdown startsAt={startTime} onComplete={() => setDuelState("playing")}/>
+            <div className={page}>
+                <Countdown startsAt={startTime} onComplete={() => setDuelState("playing")}/>
+            </div>
         );
     }
 
     // server rejected the connection
     if (sessionError) {
         return (
-            <div className="min-h-screen bg-stone-900 text-stone-100 flex flex-col items-center justify-center gap-4">
-                <p className="text-stone-400 text-sm">{sessionError}</p>
-                <button
-                    onClick={() => navigate("/duel")}
-                    className="text-xs tracking-widest uppercase text-stone-600
-                               hover:text-stone-400 transition-colors duration-200
-                               cursor-pointer"
-                >
-                    ← Create a new game
-                </button>
+            <div className={page}>
+                <NavBar back={{ href: "/shikaku/duel", label: "Duel" }} />
+                <div className="flex flex-col items-center gap-2 text-center">
+                    <h1 className="text-[22px] font-semibold tracking-[-0.02em]">Couldn't join this room</h1>
+                    <p className="text-[15px] text-label-secondary">{sessionError}</p>
+                </div>
+                <PrimaryBtn text="Create a new game" handleEvent={() => navigate("/duel")} />
             </div>
         );
     }
@@ -139,65 +143,65 @@ export default function Battle() {
     // connecting or waiting for opponent
     if (duelState === "connecting" || duelState === "waiting") {
         return (
-            <div className="min-h-screen bg-stone-900 text-stone-100 flex flex-col items-center justify-center gap-6">
-                <h1 className="text-xl font-bold tracking-widest uppercase">
-                    {duelState === "connecting" ? "Connecting..." : "Waiting for opponent"}
-                </h1>
+            <div className={page}>
+                <NavBar back={{ href: "/shikaku/duel", label: "Duel" }} title="Duel" />
+
+                <div className="flex flex-col items-center gap-3">
+                    {/* activity indicator */}
+                    <span
+                        aria-hidden
+                        className="h-5 w-5 animate-spin rounded-full border-2 border-label-quaternary border-t-label-secondary"
+                    />
+                    <h1 className="text-[22px] font-semibold tracking-[-0.02em]">
+                        {duelState === "connecting" ? "Connecting…" : "Waiting for opponent…"}
+                    </h1>
+                </div>
 
                 {duelState === "waiting" && (
-                    <div className="flex flex-col items-center gap-3">
-                        <p className="text-stone-500 text-xs tracking-wide">
+                    <div className="flex w-full max-w-md flex-col gap-2.5 rounded-2xl bg-surface p-4 shadow-card ring-1 ring-separator">
+                        <p className="text-[13px] font-medium text-label-secondary">
                             Share this link
                         </p>
                         <div className="flex items-center gap-2">
-                            <code className="text-xs text-stone-400 bg-stone-800 border border-stone-700 px-3 py-2 rounded">
+                            <code className="min-w-0 flex-1 truncate rounded-xl bg-fill-quaternary px-3 py-2 font-mono text-[13px] text-label-secondary">
                                 {window.location.href}
                             </code>
 
                             {/* Copied module */}
                             <button
+                                type="button"
                                 onClick={() => {
                                     const text: string = String(window.location.href);
                                     navigator.clipboard.writeText(text);
                                     setCopied(true);
                                     setTimeout(() => setCopied(false), 7000);
                                 }}
-                                className="text-xs tracking-widest uppercase text-stone-500
-                                        hover:text-stone-300 transition-colors duration-200
-                                        cursor-pointer px-2 py-1"
+                                className={`btn btn-tinted shrink-0 ${copied ? "text-green" : ""}`}
                             >
-                                {copied ? "Copied!" : "Copy"}
+                                {copied ? "Copied" : "Copy"}
                             </button>
                         </div>
                     </div>
                 )}
 
-                <button
-                    onClick={() => navigate("/duel")}
-                    className="text-xs tracking-widest uppercase text-stone-600
-                               hover:text-stone-400 transition-colors duration-200
-                               cursor-pointer mt-4"
-                >
-                    ← Back
-                </button>
+                <PrimaryBtn variant="plain" text="Cancel" handleEvent={() => navigate("/duel")} />
             </div>
         );
     }
 
     // game in progress or finished
     return (
-        <div className="min-h-screen bg-stone-900 text-stone-100 flex flex-col items-center justify-center gap-6 p-4">
+        <div className={page}>
+            <NavBar back={{ href: "/shikaku/duel", label: "Duel" }} title="Duel" />
 
-            <div className="flex flex-col items-center gap-1">
-                <h1 className="text-xl font-bold tracking-widest uppercase">Duel</h1>
-
+            <div className="flex h-7 items-center justify-center">
                 {disconnected && !gameOver && (
-                    <p className="text-red-400 text-xs tracking-wide">Opponent disconnected</p>
+                    <p className="pill bg-red/12 text-red">Opponent disconnected</p>
                 )}
 
                 {!gameOver && !disconnected && (
-                    <p className="text-stone-600 text-xs tracking-wide">
-                        Don't refresh, your progress will be lost.
+                    <p className="text-[13px] text-label-tertiary">
+                        Don't refresh — your progress will be lost.
                     </p>
                 )}
             </div>
@@ -206,12 +210,11 @@ export default function Battle() {
                 <div className="flex flex-col lg:flex-row items-center lg:items-start gap-10">
 
                     {/* your board */}
-                    <div className="flex flex-col items-center gap-2">
-                        <p className={`text-xs tracking-widest uppercase
-                            ${gameOver && result === "you" ? "text-stone-300" : "text-stone-500"}`}>
+                    <div className="flex flex-col items-center gap-3">
+                        <p className={`pill ${gameOver && result === "you" ? "bg-green/12 text-green" : ""}`}>
                             You {gameOver && result === "you" ? "· Winner" : ""}
                         </p>
-                        <div className={gameOver ? "opacity-80 pointer-events-none" : ""}>
+                        <div className={`transition-opacity duration-300 ${gameOver ? "opacity-70 pointer-events-none" : ""}`}>
                             <GameBoard
                                 rows={puzzle.rows}
                                 cols={puzzle.cols}
@@ -226,43 +229,33 @@ export default function Battle() {
                     </div>
 
                     {/* opponent board */}
-                    <div className="flex flex-col items-center gap-2">
-                        <p className={`text-xs tracking-widest uppercase
-                            ${gameOver && result === "opponent" ? "text-stone-300" : "text-stone-500"}`}>
+                    <div className="flex flex-col items-center gap-3">
+                        <p className={`pill ${gameOver && result === "opponent" ? "bg-green/12 text-green" : ""}`}>
                             Opponent {gameOver && result === "opponent" ? "· Winner" : ""}
                             {!gameOver && opponentProgress.total > 0
                                 ? ` · ${opponentProgress.placed}/${opponentProgress.total}`
                                 : ""}
                         </p>
-                        <OpponentBoard
-                            rows={puzzle.rows}
-                            cols={puzzle.cols}
-                            clues={puzzle.clues}
-                            tiles={opponentTiles}
-                        />
+                        <div className={`transition-opacity duration-300 ${gameOver ? "opacity-70" : ""}`}>
+                            <OpponentBoard
+                                rows={puzzle.rows}
+                                cols={puzzle.cols}
+                                clues={puzzle.clues}
+                                tiles={opponentTiles}
+                            />
+                        </div>
                     </div>
                 </div>
             )}
 
             {gameOver && (
-                <div className="flex flex-col items-center gap-4 animate-fade-up">
-                    <p className="text-stone-300 text-sm tracking-wide">
+                <div className="flex flex-col items-center gap-4 rounded-2xl bg-surface px-8 py-6 shadow-card ring-1 ring-separator animate-fade-up">
+                    <p className="text-[22px] font-semibold tracking-[-0.02em]">
                         {result === "you" ? "You won!" : "Opponent won, lock in bruh."}
                     </p>
-                    <div className="flex gap-6">
-                        <button
-                            onClick={() => navigate("/duel")}
-                            className="text-xs tracking-widest uppercase text-stone-500
-                                       hover:text-stone-300 transition-colors duration-200
-                                       cursor-pointer"
-                        >
-                            New Game
-                        </button>
-                        <a
-                            href="/shikaku/"
-                            className="text-xs tracking-widest uppercase text-stone-500
-                                       hover:text-stone-300 transition-colors duration-200"
-                        >
+                    <div className="flex gap-2">
+                        <PrimaryBtn text="New Game" handleEvent={() => navigate("/duel")} />
+                        <a href="/shikaku/" className="btn btn-tinted">
                             Solo Mode
                         </a>
                     </div>
