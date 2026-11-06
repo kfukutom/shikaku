@@ -13,16 +13,16 @@ type SectionCard = {
 const sections: SectionCard[] = [
     {
         id: 0,
-        eyebrow: '01 - The grid',
+        eyebrow: '01 — The grid',
         title: 'Every puzzle starts with just numbers.',
         body: 'Shikaku is played on a simple, rectangular grid. There exists a handful of cells containing a number - these are your clues.',
         visual: 'numbers-only',
     },
     {
         id: 1,
-        eyebrow: '02 - One number, one rectangle',
+        eyebrow: '02 — One number, one rectangle',
         title: 'Each clue belongs to its own rectangle.',
-        body: 'Your job is very simple: draw rectangles that divide the entire grid. Partition them so that exatly one numbered cell - never two, never zero.',
+        body: 'Your job is very simple: draw rectangles that divide the entire grid. Partition them so that each contains exactly one numbered cell — never two, never zero.',
         visual: 'one-rect',
     }
 ];
@@ -60,27 +60,27 @@ export default function Learn() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-stone-900 text-stone-100">
+        <div className="min-h-dvh bg-canvas text-label">
 
-            <NavBar text="Back" section="Learn" />
+            <NavBar back={{ href: "/shikaku/", label: "Shikaku" }} title="Learn" />
 
             {/* 1: a generic title card */}
-            <header className="max-w-6xl mx-auto px-8 pt-10 pb-55">
-                <p className="text-xs tracking-widest uppercase text-stone-500 mb-6">
+            <header className="mx-auto max-w-6xl px-8 pt-36 pb-28">
+                <p className="mb-5 text-[15px] font-medium text-label-tertiary">
                     A one-minute primer
                 </p>
 
-                <h1 className="text-5xl md:text-6xl tracking-tight leading-tight">
-                    How to play <span className="italic text-stone-400">Shikaku</span>
+                <h1 className="text-[56px] font-semibold leading-[1.05] tracking-[-0.03em] md:text-[72px]">
+                    How to play <span className="text-label-secondary">Shikaku</span>
                 </h1>
 
-                <p className="text-stone-400 mt-6 max-w-lg leading-relaxed">
+                <p className="mt-6 max-w-lg text-[21px] leading-relaxed text-label-secondary">
                     Four rules. One grid. Scroll through to see how they fit together.
                 </p>
             </header>
 
-            {/* Storytelling layout */}
-            <div className="max-w-6xl mx-auto px-8 grid grid-col gap-12">
+            {/* Storytelling layout: copy scrolls on the left, visual stays pinned on the right */}
+            <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 px-8 md:grid-cols-2">
                 {/* LEFT ITEMS */}
                 <div>
                     {sections.map((section, i) => (
@@ -89,46 +89,45 @@ export default function Learn() {
                             ref={(el) => {
                                 sectionRefs.current[i] = el;
                             }}
-                            className="min-h-screen flex items-center"
+                            className="flex min-h-screen items-center"
                         >
                             <div
                                 className={`transition-opacity duration-500 ${
                                     activeIndex === i ? "opacity-100" : "opacity-30"
                                 }`}
                             >
-                                <p className="text-xs tracking-widest uppercase text-stone-500 mb-4">
+                                <p className="mb-4 text-[13px] font-medium tabular-nums text-label-tertiary">
                                     {section.eyebrow}
                                 </p>
-                                <h2 className="text-4xl tracking-tight mb-6 leading-tight">
+                                <h2 className="mb-5 text-[40px] font-semibold leading-[1.1] tracking-[-0.025em]">
                                     {section.title}
                                 </h2>
-                                <p className="text-lg text-stone-400 leading-relaxed max-w-md">
+                                <p className="max-w-md text-[19px] leading-relaxed text-label-secondary">
                                     {section.body}
                                 </p>
                             </div>
                         </div>
                     ))}
                 </div>
-            </div>
 
-            
-            {/* Stick Grid, right item */}
-            <div className="hidden md:block">
-                    <div className="sticky top-0 h-screen flex items-center">
-                        <div className="relative w-full aspect-square rounded-2xl bg-stone-950 border border-stone-800 p-8">
+                {/* Stick Grid, right item */}
+                <div className="hidden md:block">
+                    <div className="sticky top-0 flex h-screen items-center">
+                        <div className="relative aspect-square w-full rounded-3xl bg-surface p-8 shadow-card ring-1 ring-separator">
                             {/* Shikaku grid rendered here */}
 
                             {sections.map((section, i) => (
-                                <div 
+                                <div
                                     key={section.id}
-                                    className="absolute inset-0 p-8 flex items-center justify-center transition-opacity duration-700 ease-out"
+                                    className="absolute inset-0 flex items-center justify-center p-8 transition-opacity duration-700 ease-out"
                                     style={{opacity: activeIndex === i ? 1:0}}
-                                > 
+                                >
                                     { /* <LearnGrid visual={section.visual} /> */ }
                                 </div>
                             ))}
                         </div>
                     </div>
+                </div>
             </div>
         </div>
     )
