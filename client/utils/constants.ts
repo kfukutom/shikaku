@@ -22,10 +22,21 @@ export const LEVEL_LABELS : Record<number, string> = {
 };
 
 // Generated with AI:
+// Translucent tints of Apple's system colors so tiles sit well on both
+// the light and dark board surfaces.
 export const TILE_COLORS = [
-    "#e8d5b7", "#b7c9e8", "#b7e8c4", "#e8b7b7",
-    "#d5b7e8", "#e8deb7", "#b7e0e8", "#e8c4b7",
-    "#c4e8b7", "#b7b7e8", "#e8b7d5", "#dee8b7",
+    "rgba(255, 159, 10, 0.45)",  // orange
+    "rgba(10, 132, 255, 0.45)",  // blue
+    "rgba(48, 209, 88, 0.45)",   // green
+    "rgba(255, 69, 58, 0.45)",   // red
+    "rgba(191, 90, 242, 0.45)",  // purple
+    "rgba(255, 214, 10, 0.45)",  // yellow
+    "rgba(100, 210, 255, 0.45)", // cyan
+    "rgba(255, 55, 95, 0.45)",   // pink
+    "rgba(102, 212, 207, 0.45)", // mint
+    "rgba(94, 92, 230, 0.45)",   // indigo
+    "rgba(172, 142, 104, 0.45)", // brown
+    "rgba(64, 200, 224, 0.45)",  // teal
 ] as const;
 
 // Used in the modal component, level presets
