@@ -48,31 +48,11 @@ export default function OpponentBoard({ rows, cols, clues, tiles }: OpponentBoar
     return (
         <section
             aria-label="Opponent board"
-            className="inline-block select-none rounded-md bg-stone-900/70 p-3 ring-1 ring-stone-700/50 shadow-2xs"
+            className="inline-flex select-none flex-col gap-2.5"
         >
-            {/* Header: label + placement counter */}
-            <div className="flex items-center justify-between gap-4 pb-2">
-                <span className="text-[10px] uppercase tracking-[0.24em] text-stone-400">
-                    Opponent
-                </span>
-                <span className="text-[11px] tabular-nums text-stone-400">
-                    {String(placed).padStart(2, "0")}
-                    <span className="mx-1 text-stone-700">/</span>
-                    {String(total).padStart(2, "0")}
-                </span>
-            </div>
-
             {/* Board frame */}
-            <div className="relative">
-                <span className="absolute -top-0.5 -left-0.5  w-2.5 h-2.5 border-t border-l border-stone-500" />
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 border-t border-r border-stone-500" />
-                <span className="absolute -bottom-0.5 -left-0.5 w-2.5 h-2.5 border-b border-l border-stone-500" />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 border-b border-r border-stone-500" />
-
-                <div
-                    className="inline-grid rounded-sm bg-stone-950/60"
-                    style={gridTemplate}
-                >
+            <div className="relative overflow-hidden rounded-2xl border border-separator bg-separator shadow-card">
+                <div className="grid gap-px" style={gridTemplate}>
                     {Array.from({ length: rows }, (_, r) =>
                         Array.from({ length: cols }, (_, c) => {
                             const clue = clueMap.get(`${r},${c}`) ?? null;
@@ -81,18 +61,15 @@ export default function OpponentBoard({ rows, cols, clues, tiles }: OpponentBoar
                             return (
                                 <div
                                     key={`${r}-${c}`}
-                                    className="w-9 h-9 sm:w-11 sm:h-11 border border-stone-800/80
-                                               flex items-center justify-center"
+                                    className="flex h-9 w-9 items-center justify-center bg-surface sm:h-11 sm:w-11"
                                 >
                                     {clue && (
                                         <span
                                             className={`
-                                                text-lg font-bold pointer-events-none
-                                                transition-colors duration-200
-                                                ${covered ? "text-stone-500" : "text-stone-200"}
+                                                h-1.5 w-1.5 rounded-full transition-colors duration-200
+                                                ${covered ? "bg-label-quaternary" : "bg-label-tertiary"}
                                             `}
-                                        >
-                                        </span>
+                                        />
                                     )}
                                 </div>
                             );
@@ -100,20 +77,19 @@ export default function OpponentBoard({ rows, cols, clues, tiles }: OpponentBoar
                     )}
                 </div>
 
+                {/* Opponent tiles use a theme-aware fill rather than the server's fixed color */}
                 <div
-                    className="pointer-events-none absolute inset-0 grid"
+                    className="pointer-events-none absolute inset-0 grid gap-px"
                     style={gridTemplate}
                     aria-hidden
                 >
                     {tiles.map((t) => (
                         <div
                             key={t.tileId}
-                            className="opp-tile rounded-xs border border-white/10
-                                       shadow-[inset_0_0_0_1px_rgba(0,0,0,0.25)]"
+                            className="m-0.5 rounded-md bg-label/15 animate-tile-in"
                             style={{
                                 gridColumn: `${t.bounds.col + 1} / span ${t.bounds.width}`,
                                 gridRow: `${t.bounds.row + 1} / span ${t.bounds.height}`,
-                                backgroundColor: t.color,
                             }}
                         />
                     ))}
@@ -121,9 +97,9 @@ export default function OpponentBoard({ rows, cols, clues, tiles }: OpponentBoar
             </div>
 
             {/* Progress rail */}
-            <div className="mt-2.5 h-0.75 w-full overflow-hidden rounded-full bg-stone-800">
+            <div className="h-1 w-full overflow-hidden rounded-full bg-fill-tertiary">
                 <div
-                    className="h-full bg-stone-400/90 transition-[width] duration-500 ease-out"
+                    className="h-full rounded-full bg-label transition-[width] duration-500 ease-out"
                     style={{width: `${progressPct}%`}}
                 />
             </div>

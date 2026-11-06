@@ -50,10 +50,23 @@ export default function Countdown({ startsAt, durationMs = 5000, onComplete }: C
     }, [targetTime]);
 
     const secondsLeft = Math.ceil((targetTime - now) / 1000);
+    const started = secondsLeft <= 0;
 
     return (
-        <div className="text-5xl p-4 text-stone-100 font-bold flex align-middle justify-center">
-            {secondsLeft > 0 ? String(secondsLeft) : "Go!"}
+        <div className="flex flex-col items-center justify-center gap-3 p-4">
+            <p className={`text-[15px] font-medium text-label-secondary transition-opacity duration-300 ${started ? "opacity-0" : "opacity-100"}`}>
+                Get ready
+            </p>
+            {/* key re-mounts the number each second so the scale-in replays */}
+            <div
+                key={started ? "go" : secondsLeft}
+                className={`
+                    text-[112px] font-semibold leading-none tracking-[-0.04em] tabular-nums
+                    animate-count-in ${started ? "text-green" : "text-label"}
+                `}
+            >
+                {started ? "Go!" : String(secondsLeft)}
+            </div>
         </div>
     );
 }

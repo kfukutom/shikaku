@@ -43,31 +43,39 @@ function Modal({ onClose, onCreated }: ModalProps) {
     } // async handleCreate() - POST
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center z-50 animate-fade-up-fast">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* backdrop */}
-            <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/30 animate-fade-in" onClick={onClose} />
 
-            <div className="relative bg-stone-800 border border-stone-900 px-7 py-6 w-80">
-
-                <h2 className="text-stone-100 text-base font-italic tracking-widest mb-2.5 transform: uppercase">
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="new-duel-title"
+                className="glass relative w-[340px] rounded-[28px] px-6 pt-6 pb-5
+                           ring-1 ring-separator shadow-sheet animate-sheet-in"
+            >
+                <h2 id="new-duel-title" className="text-center text-[17px] font-semibold tracking-[-0.01em] text-label">
                     New Duel
                 </h2>
-                <p className="text-stone-500 text-xs mb-6 tracking-wide">
-                    Let's choose a grid size, then you may send the link to a friend or whomever.
+                <p className="mt-1.5 text-center text-[13px] leading-snug text-label-secondary">
+                    Choose a grid size, then share the link with a friend.
                 </p>
 
-                {/* grid size selector */}
-                <div className="grid grid-cols-4 gap-1.5 mb-6">
+                {/* grid size selector (segmented control) */}
+                <div role="radiogroup" aria-label="Grid size" className="mt-5 flex rounded-[9px] bg-fill-tertiary p-0.5">
                     { PRESETS.map((p, i) => (
                         <button
                             key={p.label}
+                            type="button"
+                            role="radio"
+                            aria-checked={selected === i}
                             onClick={()=>setSelected(i)}
                             className={`
-                                py-2.5 text-xs tracking-wide rounded-lg cursor-pointer
-                                transition-all duration-150
+                                flex-1 rounded-[7px] py-1.5 text-[13px] font-medium tabular-nums
+                                cursor-pointer transition-all duration-200 ease-apple
                                 ${selected === i
-                                    ? "bg-stone-100 text-stone-900 font-medium"
-                                    : "bg-stone-750 text-stone-400 hover:text-stone-200 hover:bg-stone-700"
+                                    ? "bg-segment text-label shadow-segment"
+                                    : "text-label-secondary hover:text-label"
                                 }
                             `}
                         >
@@ -77,27 +85,23 @@ function Modal({ onClose, onCreated }: ModalProps) {
                 </div>
 
                 {error && (
-                    <p className="text-red-400/80 text-xs mb-4 -mt-2">{error}</p>
+                    <p className="mt-3 text-center text-[12px] text-red">{error}</p>
                 )}
 
                 {/* actions */}
                 <button
+                    type="button"
                     onClick={handleCreate}
                     disabled={loading}
-                    className="w-full py-2.5 text-xs tracking-widest uppercase
-                               text-stone-500 hover:text-stone-300
-                               border border-stone-600 hover:border-stone-500
-                               cursor-pointer transition-colors duration-200
-                               disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="btn btn-filled mt-5 w-full"
                 >
-                    {loading ? "Creating..." : "Create Room"}
+                    {loading ? "Creating…" : "Create Room"}
                 </button>
 
                 <button
+                    type="button"
                     onClick={onClose}
-                    className="w-full mt-2 py-2 text-xs tracking-widest uppercase
-                               text-stone-600 hover:text-stone-400
-                               cursor-pointer transition-colors duration-200"
+                    className="btn btn-plain mt-1.5 w-full"
                 >
                     Cancel
                 </button>
