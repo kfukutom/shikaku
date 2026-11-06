@@ -8,10 +8,6 @@ This is a monorepo with mainly three packages:
 - **`client`** - React, TailwindCSS UI. Drag to draw rectangles, undo, skip, and auto-scaling difficulty.
 - **`server`** - Express, WebSocket server for a real-time duel mode. Handles session creation, move validation, and opponent broadcasting.
 
-*Initial Duel UI (as of 4/18/26)*
-
-![Initial Duel UI](./public/movement_demo_01.gif)
-
 ### Getting Started
 ```bash
 # please ensure pnpm's latest version is installed on your local dev
